@@ -4,6 +4,7 @@ import { agents } from '../config/agents.config';
 import Header from './Header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
+import { APP_CONFIG } from '../config/app.config';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">AI Agents Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-8">{APP_CONFIG.NAME} Dashboard</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {agents.map((agent) => (
             <Card 
@@ -33,14 +34,14 @@ const Dashboard: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     {agent.description}
                   </p>
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <h4 className="font-semibold">Key Features:</h4>
                     <ul className="text-sm text-muted-foreground list-disc list-inside">
                       {agent.features.map((feature, index) => (
                         <li key={index}>{feature}</li>
                       ))}
                     </ul>
-                  </div>
+                  </div> */}
                 </ScrollArea>
               </CardContent>
             </Card>

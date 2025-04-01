@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { Eye, EyeOff } from 'lucide-react';
+import { APP_CONFIG } from '../config/app.config';
 
 const Login: React.FC = () => {
   const [id, setId] = useState<string>('');
@@ -35,7 +36,7 @@ const Login: React.FC = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome to AI Agents Hub
+            Welcome to {APP_CONFIG.NAME}
           </CardTitle>
         </CardHeader>
         {error && (
@@ -91,7 +92,7 @@ const Login: React.FC = () => {
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <p className="px-8 text-center text-sm text-muted-foreground">
-            Enter your ID and password to access the AI Agents Hub
+            Enter your ID and password to access the {APP_CONFIG.SHORT_NAME}
           </p>
         </CardFooter>
       </Card>
