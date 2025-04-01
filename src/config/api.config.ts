@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://convo.agoraaidemo.in:3009',
+  BASE_URL: 'https://convo.agoraaidemo.in:3009',
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/login'
