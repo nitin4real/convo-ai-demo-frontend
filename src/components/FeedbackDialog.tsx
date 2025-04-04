@@ -1,4 +1,6 @@
+import { handleUserErrors } from '@/utils/toast.utils';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
@@ -14,7 +16,6 @@ import {
 } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { useNavigate } from 'react-router-dom';
 interface FeedbackDialogProps {
     children: React.ReactNode;
     isOpen?: boolean;
@@ -57,6 +58,7 @@ export const FeedbackDialog = forwardRef<FeedbackDialogRef, FeedbackDialogProps>
             setFeedback('');
             setIsOpen(false);
         } catch (error) {
+            handleUserErrors(error);
             console.error('Failed to submit feedback:', error);
             toast.error('Failed to submit feedback. Please try again.');
         } finally {

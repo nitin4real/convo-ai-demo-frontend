@@ -13,6 +13,8 @@ import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { handleUserErrors } from '@/utils/toast.utils';
+
 const Agent: React.FC = () => {
   const { agentId } = useParams();
   const convoAgentId = useRef<string | null>(null);
@@ -31,6 +33,7 @@ const Agent: React.FC = () => {
     try {
       await axios.post(`${API_CONFIG.ENDPOINTS.AGENT.HEARTBEAT}/${convoAgentId.current}`, {});
     } catch (error: any) {
+      handleUserErrors(error);
       if (error?.response?.status === 440) {
         handleTimeout();
       } else {

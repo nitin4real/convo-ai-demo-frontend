@@ -1,7 +1,9 @@
 import AgoraAIRec from '@/assets/agoraai-rec.svg';
+import { handleUserErrors } from '@/utils/toast.utils';
 import { Eye, EyeOff } from 'lucide-react';
 import React, { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { APP_CONFIG } from '../config/app.config';
 import { authService } from '../services/auth.service';
 import { Alert, AlertDescription } from './ui/alert';
@@ -9,6 +11,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+
+
 const Login: React.FC = () => {
   const [id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -25,8 +29,10 @@ const Login: React.FC = () => {
         id: parseInt(id),
         password
       });
+      toast.success('Login successful');
       navigate('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
+      handleUserErrors(err);
       setError('Invalid credentials. Please try again.');
     }
   };
@@ -34,9 +40,9 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-      <div className="flex justify-center">
-        <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
-      </div>
+        <div className="flex justify-center">
+          <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
+        </div>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
             Welcome to ConvoAI Demo

@@ -1,3 +1,4 @@
+import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AgentTile } from '../config/agents.config';
@@ -22,6 +23,7 @@ const Dashboard: React.FC = () => {
         setAgents(response.data);
         setError(null);
       } catch (err) {
+        handleUserErrors(err);
         console.error('Failed to fetch agents:', err);
         setError('Failed to load agents. Please try again later.');
       } finally {
