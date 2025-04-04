@@ -1,10 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './components/Login';
-import Dashboard from './components/Dashboard';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Agent from './components/Agent';
+import Dashboard from './components/Dashboard';
+import Login from './components/Login';
+import { Toaster } from './components/ui/sonner';
 
 const App: React.FC = () => {
+
   return (
     <Router>
       <Routes>
@@ -13,6 +15,7 @@ const App: React.FC = () => {
         <Route path="/agent/:agentId" element={<Agent />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
+      <Toaster />
     </Router>
   );
 };

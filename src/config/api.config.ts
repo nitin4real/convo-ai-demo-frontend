@@ -13,6 +13,7 @@ export const API_CONFIG = {
       HEARTBEAT: '/api/agent/heartbeat',
       CHANNEL: '/api/agent/channel',
       AGENTS: '/api/agent/agents'
-    }
+    },
+    FEEDBACK: '/api/feedback'
   }
 } as const; 
