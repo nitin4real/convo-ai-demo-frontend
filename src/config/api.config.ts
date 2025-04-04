@@ -11,7 +11,8 @@ export const API_CONFIG = {
       START: '/api/agent/start',
       STOP: '/api/agent/stop',
       HEARTBEAT: '/api/agent/heartbeat',
-      CHANNEL: '/api/agent/channel'
+      CHANNEL: '/api/agent/channel',
+      AGENTS: '/api/agent/agents'
     }
   }
 } as const; 
