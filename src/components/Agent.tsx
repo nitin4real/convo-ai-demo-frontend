@@ -1,15 +1,14 @@
 import { Mic, MicOff, Play, Square } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { APP_CONFIG } from '../config/app.config';
 import { API_CONFIG } from '../config/api.config';
+import { APP_CONFIG } from '../config/app.config';
+import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraService, RemoteUser } from '../services/agora.service';
-import { IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng';
-import { StartAgentRequest, StartAgentResponse, StopAgentRequest } from '../types/agent.types';
+import { StartAgentRequest, StartAgentResponse } from '../types/agent.types';
 import Header from './Header';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import axios from '../config/axios.config';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -20,7 +19,6 @@ const Agent: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isAgentStarted, setIsAgentStarted] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
-  const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
 
   const sendHeartbeat = async () => {
     if (!convoAgentId.current) return;
@@ -139,8 +137,6 @@ const Agent: React.FC = () => {
 
     try {
       await agoraService.joinChannel(channelInfo);
-      const track = agoraService.getLocalAudioTrack();
-      setLocalAudioTrack(track);
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
@@ -152,7 +148,6 @@ const Agent: React.FC = () => {
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
-    setLocalAudioTrack(null);
     stopHeartbeat();
     convoAgentId.current = null;
   };
