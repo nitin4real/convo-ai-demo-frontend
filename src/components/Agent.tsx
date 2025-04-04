@@ -173,30 +173,30 @@ const Agent: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-center space-x-4">
-                <Button
-                  onClick={isJoined ? leaveChannel : joinChannel}
-                  variant={isJoined ? "destructive" : "default"}
-                >
-                  {isJoined ? 'Leave Channel' : 'Join Channel'}
-                </Button>
-                {!isAgentStarted && channelInfo && (
+                {!isJoined && !isAgentStarted && channelInfo && (
                   <Button
-                    onClick={startAgent}
-                    variant="outline"
+                    onClick={async () => {
+                      await joinChannel();
+                      await startAgent();
+                    }}
+                    variant="default"
                     className="flex items-center gap-2"
                   >
                     <Play className="h-4 w-4" />
-                    Start Agent
+                    Start Conversation
                   </Button>
                 )}
-                {isAgentStarted && channelInfo && (
+                {isJoined && (
                   <Button
-                    onClick={stopAgent}
+                    onClick={async () => {
+                      await stopAgent();
+                      await leaveChannel();
+                    }}
                     variant="destructive"
                     className="flex items-center gap-2"
                   >
                     <Square className="h-4 w-4" />
-                    Stop Agent
+                    End Conversation
                   </Button>
                 )}
                 {isJoined && (
