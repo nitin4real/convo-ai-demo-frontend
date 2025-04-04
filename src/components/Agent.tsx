@@ -1,7 +1,9 @@
 import AgoraAIRec from '@/assets/agoraai-rec.svg';
+import { handleUserErrors } from '@/utils/toast.utils';
 import { Mic, MicOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { API_CONFIG } from '../config/api.config';
 import { APP_CONFIG } from '../config/app.config';
 import axios from '../config/axios.config';
@@ -13,7 +15,6 @@ import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { handleUserErrors } from '@/utils/toast.utils';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -113,9 +114,11 @@ const Agent: React.FC = () => {
       );
       convoAgentId.current = response.data.agent_id;
       console.log('Loggin Service', 'Agent started:', response.data);
+      toast.success('Conversation started');
       setIsAgentStarted(true);
       startHeartbeat();
     } catch (error: any) {
+      handleUserErrors(error);
       if (error?.response?.status === 440) {
         handleTimeout();
       } else {
@@ -128,11 +131,11 @@ const Agent: React.FC = () => {
     if (!convoAgentId.current) return;
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${API_CONFIG.ENDPOINTS.AGENT.STOP}`,
         {}
       );
-      console.log('Loggin Service', 'Agent stopped:', response.data);
+      console.log('Loggin Service', 'Agent stopped');
       setIsAgentStarted(false);
       stopHeartbeat();
       convoAgentId.current = null;
