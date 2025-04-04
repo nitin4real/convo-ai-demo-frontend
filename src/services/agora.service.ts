@@ -2,10 +2,8 @@ import axios from '../config/axios.config';
 import { API_CONFIG } from '../config/api.config';
 import AgoraRTC, { 
   IAgoraRTCClient, 
-  ICameraVideoTrack, 
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
-  IRemoteVideoTrack,
   UID
 } from 'agora-rtc-sdk-ng';
 
@@ -19,7 +17,6 @@ export interface AgoraChannelResponse {
 export interface RemoteUser {
   uid: UID;
   audioTrack?: IRemoteAudioTrack;
-  videoTrack?: IRemoteVideoTrack;
 }
 
 export interface AgoraServiceCallbacks {
@@ -32,7 +29,6 @@ export interface AgoraServiceCallbacks {
 class AgoraService {
   private client: IAgoraRTCClient;
   private localAudioTrack: IMicrophoneAudioTrack | null = null;
-  private localVideoTrack: ICameraVideoTrack | null = null;
   private remoteUsers: Map<UID, RemoteUser> = new Map();
   private callbacks: AgoraServiceCallbacks = {};
 
@@ -43,41 +39,36 @@ class AgoraService {
 
   private setupEventListeners() {
     this.client.on('user-joined', async (user) => {
-      console.log('User joined:', user.uid);
       this.remoteUsers.set(user.uid, { uid: user.uid });
       this.callbacks.onUserJoined?.(this.remoteUsers.get(user.uid)!);
     });
 
     this.client.on('user-left', (user) => {
-      console.log('User left:', user.uid);
       this.remoteUsers.delete(user.uid);
       this.callbacks.onUserLeft?.(user.uid);
     });
 
     this.client.on('user-published', async (user, mediaType) => {
-      console.log('User published:', user.uid, mediaType);
-      await this.client.subscribe(user, mediaType);
-      const remoteUser = this.remoteUsers.get(user.uid);
-      if (remoteUser) {
-        if (mediaType === 'audio') {
+      console.log('Loggin Service', 'User published:', user.uid, mediaType);
+      if (mediaType === 'audio') {
+        await this.client.subscribe(user, mediaType);
+        const remoteUser = this.remoteUsers.get(user.uid);
+        if (remoteUser) {
           remoteUser.audioTrack = user.audioTrack;
-        } else if (mediaType === 'video') {
-          remoteUser.videoTrack = user.videoTrack;
+          remoteUser.audioTrack?.play();
+          this.callbacks.onUserPublished?.(remoteUser);
         }
-        this.callbacks.onUserPublished?.(remoteUser);
       }
     });
 
     this.client.on('user-unpublished', (user, mediaType) => {
-      console.log('User unpublished:', user.uid, mediaType);
-      const remoteUser = this.remoteUsers.get(user.uid);
-      if (remoteUser) {
-        if (mediaType === 'audio') {
+      console.log('Loggin Service', 'User unpublished:', user.uid, mediaType);
+      if (mediaType === 'audio') {
+        const remoteUser = this.remoteUsers.get(user.uid);
+        if (remoteUser) {
           remoteUser.audioTrack = undefined;
-        } else if (mediaType === 'video') {
-          remoteUser.videoTrack = undefined;
+          this.callbacks.onUserUnpublished?.(remoteUser);
         }
-        this.callbacks.onUserUnpublished?.(remoteUser);
       }
     });
   }
@@ -98,34 +89,24 @@ class AgoraService {
       channelInfo.appId,
       channelInfo.channelName,
       channelInfo.token,
-      channelInfo.uid.toString()
+      channelInfo.uid
     );
 
     this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
-
-    await this.client.publish([this.localAudioTrack, this.localVideoTrack]);
+    await this.client.publish([this.localAudioTrack]);
   }
 
   async leaveChannel(): Promise<void> {
     if (this.localAudioTrack) {
       this.localAudioTrack.close();
     }
-    if (this.localVideoTrack) {
-      this.localVideoTrack.close();
-    }
     await this.client.leave();
     this.localAudioTrack = null;
-    this.localVideoTrack = null;
     this.remoteUsers.clear();
   }
 
   getLocalAudioTrack(): IMicrophoneAudioTrack | null {
     return this.localAudioTrack;
-  }
-
-  getLocalVideoTrack(): ICameraVideoTrack | null {
-    return this.localVideoTrack;
   }
 
   getRemoteUsers(): RemoteUser[] {
@@ -135,12 +116,6 @@ class AgoraService {
   toggleAudio(enabled: boolean): void {
     if (this.localAudioTrack) {
       this.localAudioTrack.setEnabled(enabled);
-    }
-  }
-
-  toggleVideo(enabled: boolean): void {
-    if (this.localVideoTrack) {
-      this.localVideoTrack.setEnabled(enabled);
     }
   }
 }

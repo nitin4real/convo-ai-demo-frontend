@@ -1,9 +1,11 @@
-import { Mic, MicOff, Video, VideoOff, Play } from 'lucide-react';
+import { Mic, MicOff, Play, Square } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { APP_CONFIG } from '../config/app.config';
 import { API_CONFIG } from '../config/api.config';
 import { AgoraChannelResponse, agoraService, RemoteUser } from '../services/agora.service';
+import { IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng';
+import { StartAgentRequest, StartAgentResponse, StopAgentRequest } from '../types/agent.types';
 import Header from './Header';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -11,13 +13,57 @@ import axios from '../config/axios.config';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
+  const convoAgentId = useRef<string | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [channelInfo, setChannelInfo] = useState<AgoraChannelResponse | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [isAgentStarted, setIsAgentStarted] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
-  const localVideoRef = useRef<HTMLDivElement>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
+
+  const sendHeartbeat = async () => {
+    if (!convoAgentId.current) return;
+
+    try {
+      await axios.post(`${API_CONFIG.ENDPOINTS.AGENT.HEARTBEAT}/${convoAgentId.current}`, {});
+    } catch (error: any) {
+      if (error?.response?.status === 440) {
+        console.log('Session expired, stopping heartbeat');
+        stopHeartbeat();
+        setIsAgentStarted(false);
+        convoAgentId.current = null;
+      } else {
+        console.error('Failed to send heartbeat', error);
+      }
+    }
+  };
+
+  const startHeartbeat = () => {
+    // Clear any existing interval
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+    
+    // Send initial heartbeat
+    sendHeartbeat();
+    
+    // Set up new interval
+    heartbeatIntervalRef.current = setInterval(sendHeartbeat, 5000);
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopHeartbeat();
+    };
+  }, []);
 
   useEffect(() => {
     const initializeChannel = async () => {
@@ -41,20 +87,12 @@ const Agent: React.FC = () => {
   useEffect(() => {
     agoraService.setCallbacks({
       onUserJoined: (user) => {
+        console.log('Loggin Service', 'User joined:', user);
         setRemoteUsers(prev => [...prev, user]);
       },
       onUserLeft: (uid) => {
+        console.log('Loggin Service', 'User left:', uid);
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
-      },
-      onUserPublished: (user) => {
-        setRemoteUsers(prev => 
-          prev.map(u => u.uid === user.uid ? user : u)
-        );
-      },
-      onUserUnpublished: (user) => {
-        setRemoteUsers(prev => 
-          prev.map(u => u.uid === user.uid ? user : u)
-        );
       }
     });
   }, []);
@@ -63,12 +101,36 @@ const Agent: React.FC = () => {
     if (!agentId || !channelInfo) return;
 
     try {
-      await axios.post(`${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`, {
+      const request: StartAgentRequest = {
         channelName: channelInfo.channelName
-      });
+      };
+      const response = await axios.post<StartAgentResponse>(
+        `${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`,
+        request
+      );
+      convoAgentId.current = response.data.agent_id;
+      console.log('Loggin Service', 'Agent started:', response.data);
       setIsAgentStarted(true);
+      startHeartbeat();
     } catch (error) {
       console.error('Failed to start agent:', error);
+    }
+  };
+
+  const stopAgent = async () => {
+    if (!convoAgentId.current) return;
+
+    try {
+      const response = await axios.post(
+        `${API_CONFIG.ENDPOINTS.AGENT.STOP}`,
+        {}
+      );
+      console.log('Loggin Service', 'Agent stopped:', response.data);
+      setIsAgentStarted(false);
+      stopHeartbeat();
+      convoAgentId.current = null;
+    } catch (error) {
+      console.error('Failed to stop agent:', error);
     }
   };
 
@@ -77,12 +139,8 @@ const Agent: React.FC = () => {
 
     try {
       await agoraService.joinChannel(channelInfo);
-      
-      const videoTrack = agoraService.getLocalVideoTrack();
-      if (videoTrack && localVideoRef.current) {
-        videoTrack.play(localVideoRef.current);
-      }
-      
+      const track = agoraService.getLocalAudioTrack();
+      setLocalAudioTrack(track);
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
@@ -94,16 +152,14 @@ const Agent: React.FC = () => {
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
+    setLocalAudioTrack(null);
+    stopHeartbeat();
+    convoAgentId.current = null;
   };
 
   const toggleMute = () => {
     agoraService.toggleAudio(!isMuted);
     setIsMuted(!isMuted);
-  };
-
-  const toggleVideo = () => {
-    agoraService.toggleVideo(!isVideoOff);
-    setIsVideoOff(!isVideoOff);
   };
 
   return (
@@ -121,27 +177,6 @@ const Agent: React.FC = () => {
                   Channel: <span className="font-medium">{channelInfo.channelName}</span>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex justify-center">
-                  <div 
-                    ref={localVideoRef} 
-                    className="w-full aspect-video bg-black rounded-lg overflow-hidden"
-                  />
-                </div>
-                {remoteUsers.map((user) => (
-                  <div key={user.uid.toString()} className="flex justify-center">
-                    <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-                      {user.videoTrack && (
-                        <div ref={(el) => {
-                          if (el) {
-                            user.videoTrack?.play(el);
-                          }
-                        }} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
               <div className="flex justify-center space-x-4">
                 <Button
                   onClick={isJoined ? leaveChannel : joinChannel}
@@ -159,23 +194,24 @@ const Agent: React.FC = () => {
                     Start Agent
                   </Button>
                 )}
+                {isAgentStarted && channelInfo && (
+                  <Button
+                    onClick={stopAgent}
+                    variant="destructive"
+                    className="flex items-center gap-2"
+                  >
+                    <Square className="h-4 w-4" />
+                    Stop Agent
+                  </Button>
+                )}
                 {isJoined && (
-                  <>
-                    <Button
-                      onClick={toggleMute}
-                      variant="outline"
-                      size="icon"
-                    >
-                      {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      onClick={toggleVideo}
-                      variant="outline"
-                      size="icon"
-                    >
-                      {isVideoOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-                    </Button>
-                  </>
+                  <Button
+                    onClick={toggleMute}
+                    variant="outline"
+                    size="icon"
+                  >
+                    {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
                 )}
               </div>
               {isAgentStarted && (

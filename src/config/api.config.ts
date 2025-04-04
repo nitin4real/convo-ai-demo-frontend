@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://convo.agoraaidemo.in:3009',
+  BASE_URL: 'http://localhost:3009',
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/login'
@@ -8,7 +8,10 @@ export const API_CONFIG = {
       CHANNEL: '/api/agora/channel'
     },
     AGENT: {
-      START: '/api/agent/start'
+      START: '/api/agent/start',
+      STOP: '/api/agent/stop',
+      HEARTBEAT: '/api/agent/heartbeat',
+      CHANNEL: '/api/agent/channel'
     }
   }
 } as const; 
