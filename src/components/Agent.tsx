@@ -1,4 +1,4 @@
-import { Mic, MicOff, Play, Square } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_CONFIG } from '../config/api.config';
@@ -6,12 +6,12 @@ import { APP_CONFIG } from '../config/app.config';
 import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraService, RemoteUser } from '../services/agora.service';
 import { StartAgentRequest, StartAgentResponse } from '../types/agent.types';
+import { AIAgentIcon } from './AIAgentIcon';
+import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
+import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
-import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
-import { AIAgentIcon } from './AIAgentIcon';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();

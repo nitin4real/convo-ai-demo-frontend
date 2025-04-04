@@ -1,13 +1,12 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from './Header';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
-import { APP_CONFIG } from '../config/app.config';
+import { AgentTile } from '../config/agents.config';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
-import { AgentTile } from '../config/agents.config';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
+import Header from './Header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();

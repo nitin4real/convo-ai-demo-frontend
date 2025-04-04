@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { FeedbackDialogRef } from './FeedbackDialog';
 import { Button } from './ui/button';
 import {
     Dialog,
@@ -9,7 +9,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from './ui/dialog';
-import { FeedbackDialogRef } from './FeedbackDialog';
 
 interface PlatformUsageDialogProps {
     isOpen?: boolean;
@@ -28,7 +27,6 @@ export const PlatformUsageDialog = forwardRef<PlatformUsageDialogRef, PlatformUs
     feedbackDialogRef
 }, ref) => {
     const [internalIsOpen, setInternalIsOpen] = useState(false);
-    const navigate = useNavigate();
 
     const isOpen = externalIsOpen ?? internalIsOpen;
     const setIsOpen = externalOnOpenChange ?? setInternalIsOpen;
