@@ -14,7 +14,7 @@ import {
 } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-
+import { useNavigate } from 'react-router-dom';
 interface FeedbackDialogProps {
     children: React.ReactNode;
     isOpen?: boolean;
@@ -22,7 +22,7 @@ interface FeedbackDialogProps {
 }
 
 export interface FeedbackDialogRef {
-    open: () => void;
+    open: (navigateTo?: string) => void;
     close: () => void;
 }
 
@@ -34,12 +34,16 @@ export const FeedbackDialog = forwardRef<FeedbackDialogRef, FeedbackDialogProps>
     const [internalIsOpen, setInternalIsOpen] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const navigate = useNavigate();
+    const [navigateTo, setNavigateTo] = useState<string | undefined>(undefined);
     const isOpen = externalIsOpen ?? internalIsOpen;
     const setIsOpen = externalOnOpenChange ?? setInternalIsOpen;
 
     useImperativeHandle(ref, () => ({
-        open: () => setIsOpen(true),
+        open: (navigateTo?: string  ) => {
+            setIsOpen(true);
+            setNavigateTo(navigateTo);
+        },
         close: () => setIsOpen(false)
     }));
 
@@ -58,11 +62,17 @@ export const FeedbackDialog = forwardRef<FeedbackDialogRef, FeedbackDialogProps>
         } finally {
             setIsSubmitting(false);
         }
+        if (navigateTo) {
+            navigate(navigateTo);
+        }
     };
 
     const handleClose = () => {
         setFeedback('');
         setIsOpen(false);
+        if (navigateTo) {
+            navigate(navigateTo);
+        }
     };
 
     return (

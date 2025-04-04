@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
@@ -7,9 +7,11 @@ import { APP_CONFIG } from '../config/app.config';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { AgentTile } from '../config/agents.config';
+import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
   const [agents, setAgents] = useState<AgentTile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header feedbackDialogRef={feedbackDialogRef} />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-[50vh]">
             <div className="text-center">
@@ -47,6 +49,9 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </main>
+        <FeedbackDialog ref={feedbackDialogRef}>
+          <div className="hidden" />
+        </FeedbackDialog>
       </div>
     );
   }
@@ -54,7 +59,7 @@ const Dashboard: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        <Header feedbackDialogRef={feedbackDialogRef} />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-[50vh]">
             <div className="text-center">
@@ -63,15 +68,18 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </main>
+        <FeedbackDialog ref={feedbackDialogRef}>
+          <div className="hidden" />
+        </FeedbackDialog>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header feedbackDialogRef={feedbackDialogRef} />
       <main className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">{APP_CONFIG.NAME} Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {agents.map((agent) => (
             <Card 
@@ -102,6 +110,9 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
       </main>
+      <FeedbackDialog ref={feedbackDialogRef}>
+        <div className="hidden" />
+      </FeedbackDialog>
     </div>
   );
 };

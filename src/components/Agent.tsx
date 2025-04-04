@@ -9,11 +9,16 @@ import { StartAgentRequest, StartAgentResponse } from '../types/agent.types';
 import Header from './Header';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
+import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
+import { AIAgentIcon } from './AIAgentIcon';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
   const convoAgentId = useRef<string | null>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
+  const platformUsageDialogRef = useRef<PlatformUsageDialogRef>(null);
   const [channelInfo, setChannelInfo] = useState<AgoraChannelResponse | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -27,10 +32,7 @@ const Agent: React.FC = () => {
       await axios.post(`${API_CONFIG.ENDPOINTS.AGENT.HEARTBEAT}/${convoAgentId.current}`, {});
     } catch (error: any) {
       if (error?.response?.status === 440) {
-        console.log('Session expired, stopping heartbeat');
-        stopHeartbeat();
-        setIsAgentStarted(false);
-        convoAgentId.current = null;
+        handleTimeout();
       } else {
         console.error('Failed to send heartbeat', error);
       }
@@ -47,7 +49,7 @@ const Agent: React.FC = () => {
     sendHeartbeat();
     
     // Set up new interval
-    heartbeatIntervalRef.current = setInterval(sendHeartbeat, 5000);
+    heartbeatIntervalRef.current = setInterval(sendHeartbeat, 8000);
   };
 
   const stopHeartbeat = () => {
@@ -110,8 +112,12 @@ const Agent: React.FC = () => {
       console.log('Loggin Service', 'Agent started:', response.data);
       setIsAgentStarted(true);
       startHeartbeat();
-    } catch (error) {
-      console.error('Failed to start agent:', error);
+    } catch (error: any) {
+      if (error?.response?.status === 440) {
+        handleTimeout();
+      } else {
+        console.error('Failed to start agent:', error);
+      }
     }
   };
 
@@ -157,9 +163,25 @@ const Agent: React.FC = () => {
     setIsMuted(!isMuted);
   };
 
+  const handleTimeout = () => {
+      console.log('Session expired, stopping heartbeat');
+      stopHeartbeat();
+      leaveChannel();
+      setIsAgentStarted(false);
+      convoAgentId.current = null;
+      platformUsageDialogRef.current?.open();
+  };
+
+  const handleEndConversation = async () => {
+    await stopAgent();
+    await leaveChannel();
+    feedbackDialogRef.current?.open();
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header feedbackDialogRef={feedbackDialogRef} />
+
       <main className="container mx-auto p-4">
         <Card>
           <CardHeader>
@@ -182,20 +204,15 @@ const Agent: React.FC = () => {
                     variant="default"
                     className="flex items-center gap-2"
                   >
-                    <Play className="h-4 w-4" />
                     Start Conversation
                   </Button>
                 )}
                 {isJoined && (
                   <Button
-                    onClick={async () => {
-                      await stopAgent();
-                      await leaveChannel();
-                    }}
+                    onClick={handleEndConversation}
                     variant="destructive"
                     className="flex items-center gap-2"
                   >
-                    <Square className="h-4 w-4" />
                     End Conversation
                   </Button>
                 )}
@@ -210,8 +227,9 @@ const Agent: React.FC = () => {
                 )}
               </div>
               {isAgentStarted && (
-                <div className="text-center text-sm text-green-600">
-                  Agent is active in the channel
+                <div className="text-center text-sm text-green-600 flex items-center justify-center gap-2">
+                  <AIAgentIcon size="sm" />
+                  <span>Agent is active in the channel</span>
                 </div>
               )}
               {remoteUsers.length > 0 && (
@@ -223,6 +241,13 @@ const Agent: React.FC = () => {
           </CardContent>
         </Card>
       </main>
+      <FeedbackDialog ref={feedbackDialogRef}>
+        <div className="hidden" />
+      </FeedbackDialog>
+      <PlatformUsageDialog 
+        ref={platformUsageDialogRef} 
+        feedbackDialogRef={feedbackDialogRef}
+      />
     </div>
   );
 };

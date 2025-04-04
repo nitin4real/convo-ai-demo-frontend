@@ -8,10 +8,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Settings, User, History, Star, LogOut } from 'lucide-react';
+import { Settings, User, History, Star, LogOut, MessageSquare } from 'lucide-react';
 import { APP_CONFIG } from '../config/app.config';
+import { FeedbackDialogRef } from './FeedbackDialog';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  feedbackDialogRef?: React.RefObject<FeedbackDialogRef | null>;
+}
+
+const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -39,6 +44,13 @@ const Header: React.FC = () => {
               <Button variant="ghost">
                 <History className="mr-2 h-4 w-4" />
                 History
+              </Button>
+              <Button 
+                variant="ghost"
+                onClick={() => feedbackDialogRef?.current?.open()}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Feedback
               </Button>
             </nav>
           </div>
