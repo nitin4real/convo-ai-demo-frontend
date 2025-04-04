@@ -1,3 +1,4 @@
+import AgoraAIRec from '@/assets/agoraai-rec.svg';
 import { Mic, MicOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -12,7 +13,6 @@ import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-
 const Agent: React.FC = () => {
   const { agentId } = useParams();
   const convoAgentId = useRef<string | null>(null);
@@ -44,10 +44,10 @@ const Agent: React.FC = () => {
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
     }
-    
+
     // Send initial heartbeat
     sendHeartbeat();
-    
+
     // Set up new interval
     heartbeatIntervalRef.current = setInterval(sendHeartbeat, 8000);
   };
@@ -164,12 +164,12 @@ const Agent: React.FC = () => {
   };
 
   const handleTimeout = () => {
-      console.log('Session expired, stopping heartbeat');
-      stopHeartbeat();
-      leaveChannel();
-      setIsAgentStarted(false);
-      convoAgentId.current = null;
-      platformUsageDialogRef.current?.open();
+    console.log('Session expired, stopping heartbeat');
+    stopHeartbeat();
+    leaveChannel();
+    setIsAgentStarted(false);
+    convoAgentId.current = null;
+    platformUsageDialogRef.current?.open();
   };
 
   const handleEndConversation = async () => {
@@ -189,11 +189,9 @@ const Agent: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {channelInfo && (
-                <div className="text-center text-sm text-muted-foreground">
-                  Channel: <span className="font-medium">{channelInfo.channelName}</span>
-                </div>
-              )}
+              <div className="flex justify-center">
+                <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
+              </div>
               <div className="flex justify-center space-x-4">
                 {!isJoined && !isAgentStarted && channelInfo && (
                   <Button
@@ -244,8 +242,8 @@ const Agent: React.FC = () => {
       <FeedbackDialog ref={feedbackDialogRef}>
         <div className="hidden" />
       </FeedbackDialog>
-      <PlatformUsageDialog 
-        ref={platformUsageDialogRef} 
+      <PlatformUsageDialog
+        ref={platformUsageDialogRef}
         feedbackDialogRef={feedbackDialogRef}
       />
     </div>

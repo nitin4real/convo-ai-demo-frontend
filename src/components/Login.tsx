@@ -1,14 +1,14 @@
-import React, { useState, FormEvent } from 'react';
+import AgoraAIRec from '@/assets/agoraai-rec.svg';
+import { Eye, EyeOff } from 'lucide-react';
+import React, { FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { APP_CONFIG } from '../config/app.config';
+import { authService } from '../services/auth.service';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Button } from './ui/button';
-import { authService } from '../services/auth.service';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
-import { Alert, AlertDescription } from './ui/alert';
-import { Eye, EyeOff } from 'lucide-react';
-import { APP_CONFIG } from '../config/app.config';
-
 const Login: React.FC = () => {
   const [id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -19,7 +19,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       await authService.login({
         id: parseInt(id),
@@ -34,9 +34,12 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
+      <div className="flex justify-center">
+        <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
+      </div>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome to {APP_CONFIG.NAME}
+            Welcome to ConvoAI Demo
           </CardTitle>
         </CardHeader>
         {error && (
@@ -52,7 +55,7 @@ const Login: React.FC = () => {
               <Label htmlFor="id">ID</Label>
               <Input
                 type="number"
-                id="id"                
+                id="id"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
                 placeholder="Enter your ID"

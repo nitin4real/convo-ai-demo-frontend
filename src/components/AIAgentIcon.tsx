@@ -4,11 +4,15 @@ import { cn } from '@/lib/utils';
 interface AIAgentIconProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'pulse' | 'glow';
+  color?: 'primary' | 'secondary' | 'accent';
 }
 
 export const AIAgentIcon: React.FC<AIAgentIconProps> = ({ 
   className,
-  size = 'md'
+  size = 'md',
+  variant = 'default',
+  color = 'primary'
 }) => {
   const sizeClasses = {
     sm: 'w-6 h-6',
@@ -16,17 +20,36 @@ export const AIAgentIcon: React.FC<AIAgentIconProps> = ({
     lg: 'w-12 h-12'
   };
 
+  const colorClasses = {
+    primary: 'text-primary',
+    secondary: 'text-secondary',
+    accent: 'text-accent'
+  };
+
+  const variantClasses = {
+    default: '',
+    pulse: 'animate-pulse',
+    glow: 'drop-shadow-[0_0_8px_rgba(var(--primary),0.3)]'
+  };
+
   return (
     <div className={cn(
       "relative inline-block",
       sizeClasses[size],
+      variantClasses[variant],
+      colorClasses[color],
       className
     )}>
-      <div className="absolute inset-0 animate-pulse">
-        <div className="absolute inset-0 rounded-full bg-primary/20 blur-sm" />
-      </div>
+      {variant === 'glow' && (
+        <div className="absolute inset-0 animate-pulse">
+          <div className="absolute inset-0 rounded-full bg-primary/20 blur-sm" />
+        </div>
+      )}
       <svg 
-        className="relative z-10 w-full h-full"
+        className={cn(
+          "relative z-10 w-full h-full",
+          variant === 'glow' && 'drop-shadow-[0_0_8px_rgba(var(--primary),0.3)]'
+        )}
         viewBox="0 0 48 48" 
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -39,4 +62,4 @@ export const AIAgentIcon: React.FC<AIAgentIconProps> = ({
       </svg>
     </div>
   );
-}; 
+};
