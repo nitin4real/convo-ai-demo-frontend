@@ -24,7 +24,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
   const navigate = useNavigate();
   const isAuthenticated = !!authService.getToken();
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
 
   const handleLogout = () => {
     authService.logout();
