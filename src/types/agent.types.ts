@@ -15,3 +15,17 @@ export interface StartAgentRequest {
 }
 
 export interface StopAgentRequest {}
+
+export interface AgentType {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface AgentTile {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  features: string[];
+}

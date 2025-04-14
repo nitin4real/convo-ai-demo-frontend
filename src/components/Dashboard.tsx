@@ -1,25 +1,50 @@
 import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AgentTile } from '../config/agents.config';
+import { AgentTile, AgentType } from '../types/agent.types';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
+import AgentTypeList from './AgentTypeList';
+import AgentList from './AgentList';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
+  const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
   const [agents, setAgents] = useState<AgentTile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchAgentTypes = async () => {
       try {
-        const response = await axios.get<AgentTile[]>(API_CONFIG.ENDPOINTS.AGENT.AGENTS);
+        const response = await axios.get<AgentType[]>(API_CONFIG.ENDPOINTS.AGENT.AGENT_TYPES);
+        setAgentTypes(response.data);
+        setError(null);
+      } catch (err) {
+        handleUserErrors(err);
+        console.error('Failed to fetch agent types:', err);
+        setError('Failed to load agent types. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgentTypes();
+  }, []);
+
+  useEffect(() => {
+    const fetchAgentsByType = async () => {
+      if (!selectedType) return;
+      
+      setLoading(true);
+      try {
+        const response = await axios.get<AgentTile[]>(
+          API_CONFIG.ENDPOINTS.AGENT.AGENTS_BY_TYPE.replace(':type', selectedType)
+        );
         setAgents(response.data);
         setError(null);
       } catch (err) {
@@ -31,22 +56,26 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    fetchAgents();
-  }, []);
+    fetchAgentsByType();
+  }, [selectedType]);
 
-  const handleTileClick = (agentId: string) => {
+  const handleTypeClick = (typeId: string) => {
+    setSelectedType(typeId);
+  };
+
+  const handleAgentClick = (agentId: string) => {
     navigate(`/agent/${agentId}`);
   };
 
-  if (loading) {
+  if (loading && !selectedType) {
     return (
       <div className="min-h-screen bg-background">
         <Header feedbackDialogRef={feedbackDialogRef} />
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-[50vh]">
             <div className="text-center">
-              <div className="text-2xl font-semibold mb-2">Loading agents...</div>
-              <div className="text-sm text-muted-foreground">Please wait while we fetch the available agents.</div>
+              <div className="text-2xl font-semibold mb-2">Loading agent types...</div>
+              <div className="text-sm text-muted-foreground">Please wait while we fetch the available agent types.</div>
             </div>
           </div>
         </main>
@@ -81,35 +110,20 @@ const Dashboard: React.FC = () => {
       <Header feedbackDialogRef={feedbackDialogRef} />
       <main className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {agents.map((agent) => (
-            <Card 
-              key={agent.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleTileClick(agent.id)}
-            >
-              <CardHeader>
-                <CardTitle>{agent.title}</CardTitle>
-                <CardDescription>{agent.name}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[200px]">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {agent.description}
-                  </p>
-                  {/* <div className="space-y-2">
-                    <h4 className="font-semibold">Key Features:</h4>
-                    <ul className="text-sm text-muted-foreground list-disc list-inside">
-                      {agent.features.map((feature, index) => (
-                        <li key={index}>{feature}</li>
-                      ))}
-                    </ul>
-                  </div> */}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        
+        {!selectedType ? (
+          <AgentTypeList 
+            agentTypes={agentTypes}
+            onTypeClick={handleTypeClick}
+          />
+        ) : (
+          <AgentList 
+            agents={agents}
+            loading={loading}
+            onBackClick={() => setSelectedType(null)}
+            onAgentClick={handleAgentClick}
+          />
+        )}
       </main>
       <FeedbackDialog ref={feedbackDialogRef}>
         <div className="hidden" />

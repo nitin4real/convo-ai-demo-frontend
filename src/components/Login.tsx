@@ -30,7 +30,7 @@ const Login: React.FC = () => {
         password
       });
       toast.success('Login successful');
-      navigate('/dashboard');
+      navigate('/agents');
     } catch (err: any) {
       handleUserErrors(err);
       setError('Invalid credentials. Please try again.');

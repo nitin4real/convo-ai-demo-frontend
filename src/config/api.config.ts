@@ -12,7 +12,10 @@ export const API_CONFIG = {
       STOP: '/api/agent/stop',
       HEARTBEAT: '/api/agent/heartbeat',
       CHANNEL: '/api/agent/channel',
-      AGENTS: '/api/agent/agents'
+      AGENTS: '/api/agent/agents',
+      AGENT_TYPES: '/api/agent/agent-types',
+      AGENTS_BY_TYPE: '/api/agent/agents/:type',
+      AGENT_DETAILS: '/api/agent/:agentId'
     },
     FEEDBACK: '/api/feedback'
   }

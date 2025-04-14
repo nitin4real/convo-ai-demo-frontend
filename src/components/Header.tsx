@@ -7,10 +7,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from './ui/dropdown-menu';
-import { Settings, User, History, Star, LogOut, MessageSquare, LogIn } from 'lucide-react';
+import { Settings, User, LogOut, MessageSquare, LogIn, Users, LayoutDashboard, Sun, Moon, Monitor } from 'lucide-react';
 import { APP_CONFIG } from '../config/app.config';
 import { FeedbackDialogRef } from './FeedbackDialog';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface HeaderProps {
   feedbackDialogRef?: React.RefObject<FeedbackDialogRef | null>;
@@ -19,6 +24,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
   const navigate = useNavigate();
   const isAuthenticated = !!authService.getToken();
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = () => {
     authService.logout();
@@ -41,15 +47,15 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
                   variant="ghost"
                   onClick={() => navigate('/dashboard')}
                 >
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
                   Dashboard
                 </Button>
-                <Button variant="ghost">
-                  <Star className="mr-2 h-4 w-4" />
-                  Favorites
-                </Button>
-                <Button variant="ghost">
-                  <History className="mr-2 h-4 w-4" />
-                  History
+                <Button 
+                  variant="ghost"
+                  onClick={() => navigate('/agents')}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  All Agents
                 </Button>
                 <Button 
                   variant="ghost"
@@ -75,6 +81,27 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Sun className="mr-2 h-4 w-4" />
+                        Theme
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem onClick={() => setTheme('light')}>
+                          <Sun className="mr-2 h-4 w-4" />
+                          Light
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('dark')}>
+                          <Moon className="mr-2 h-4 w-4" />
+                          Dark
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('system')}>
+                          <Monitor className="mr-2 h-4 w-4" />
+                          System
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem>
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
