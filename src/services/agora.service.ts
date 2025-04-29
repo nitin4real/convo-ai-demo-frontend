@@ -1,11 +1,12 @@
 import axios from '../config/axios.config';
 import { API_CONFIG } from '../config/api.config';
-import AgoraRTC, { 
-  IAgoraRTCClient, 
+import AgoraRTC, {
+  IAgoraRTCClient,
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
   UID
 } from 'agora-rtc-sdk-ng';
+// import { messageEngine } from './agora.message.service';
 
 export interface AgoraChannelResponse {
   appId: string;
@@ -71,6 +72,11 @@ class AgoraService {
         }
       }
     });
+
+    // this.client.on('stream-message', (_: UID, payload: Uint8Array) => {
+    //   messageEngine.handleStreamMessage(payload)
+    // })
+
   }
 
   setCallbacks(callbacks: AgoraServiceCallbacks) {

@@ -14,6 +14,7 @@ import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -30,6 +31,7 @@ const Agent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ const Agent: React.FC = () => {
 
     sendHeartbeat();
     heartbeatIntervalRef.current = setInterval(sendHeartbeat, 8000);
-    
+
     // Update timer every second
     timerIntervalRef.current = setInterval(() => {
       setRemainingTime(prev => {
@@ -148,7 +150,8 @@ const Agent: React.FC = () => {
 
     try {
       const request: StartAgentRequest = {
-        channelName: channelInfo.channelName
+        channelName: channelInfo.channelName,
+        languageCode: selectedLanguage || ""
       };
       const response = await axios.post<StartAgentResponse>(
         `${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`,
@@ -317,19 +320,42 @@ const Agent: React.FC = () => {
               </div>
 
               <div className="flex flex-col items-center gap-6 pt-4">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center gap-4">
                   {!isJoined && !isAgentStarted && channelInfo && (
-                    <Button
-                      onClick={async () => {
-                        await joinChannel();
-                        await startAgent();
-                      }}
-                      variant="default"
-                      size="lg"
-                      className="min-w-[200px]"
-                    >
-                      Start Conversation
-                    </Button>
+                    <>
+                      {agentDetails?.languages && (
+                        <Select
+                          value={selectedLanguage || ""}
+                          onValueChange={(value) => setSelectedLanguage(value)}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Select Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {agentDetails.languages.map((lang) => (
+                            <SelectItem key={lang.isoCode} value={lang.isoCode}>
+                              {lang.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      )}
+                      <Button
+                        onClick={async () => {
+                          if (agentDetails?.languages && !selectedLanguage) {
+                            toast.error('Please select a language');
+                            return;
+                          }
+                          await joinChannel();
+                          await startAgent();
+                        }}
+                        variant="default"
+                        size="lg"
+                        className="min-w-[200px]"
+                      >
+                        Start Conversation
+                      </Button>
+                    </>
                   )}
                   {isJoined && (
                     <>
@@ -382,7 +408,7 @@ const Agent: React.FC = () => {
         ref={platformUsageDialogRef}
         feedbackDialogRef={feedbackDialogRef}
       />
-    </div>
+    </div >
   );
 };
 
