@@ -210,7 +210,9 @@ const Agent: React.FC = () => {
   };
 
   const toggleMute = () => {
-    agoraService.toggleAudio(!isMuted);
+    console.log('Current mute state', isMuted);
+    console.log('Toggling mute state', !isMuted);
+    agoraService.toggleAudio(isMuted);
     setIsMuted(!isMuted);
   };
 
