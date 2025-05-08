@@ -1,4 +1,4 @@
-import AgoraAIRec from '@/assets/agoraai-rec.svg';
+import AgoraAIRec from '@/assets/agora-rec.svg';
 import { handleUserErrors } from '@/utils/toast.utils';
 import { Eye, EyeOff } from 'lucide-react';
 import React, { FormEvent, useState } from 'react';
