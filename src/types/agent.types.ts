@@ -36,3 +36,9 @@ export interface AgentTile {
   features: string[];
   languages: AgentLanguage[];
 }
+
+export interface IMessage {
+  speaker: string;
+  transcription: string;
+  turn_id: number;
+}

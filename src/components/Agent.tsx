@@ -1,13 +1,13 @@
 import AgoraAIRec from '@/assets/agora-rec.svg';
 import { handleUserErrors } from '@/utils/toast.utils';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, MessageSquare, MessageSquareOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraService, RemoteUser } from '../services/agora.service';
-import { AgentTile, StartAgentRequest, StartAgentResponse } from '../types/agent.types';
+import { AgentTile, IMessage, StartAgentRequest, StartAgentResponse } from '../types/agent.types';
 import { AIAgentIcon } from './AIAgentIcon';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
@@ -15,6 +15,7 @@ import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDial
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { TranscriptionList } from './TranscriptionList';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -26,6 +27,7 @@ const Agent: React.FC = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAgentStarted, setIsAgentStarted] = useState(false);
+  // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,8 @@ const Agent: React.FC = () => {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [transcripts, setTranscripts] = useState<IMessage[]>([]);
+  const [showTranscriptions, setShowTranscriptions] = useState(false);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -141,6 +145,19 @@ const Agent: React.FC = () => {
       onUserLeft: (uid) => {
         console.log('Loggin Service', 'User left:', uid);
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
+      },
+      onMessage: (message) => {
+        setTranscripts(prev => {
+          if (prev.length > 0) {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage.turn_id === message.turn_id && lastMessage.speaker === message.speaker) {
+              return [...prev.slice(0, -1), message];
+            } else {
+              return [...prev, message];
+            }
+          }
+          return [...prev, message];
+        });
       }
     });
   }, []);
@@ -301,7 +318,7 @@ const Agent: React.FC = () => {
                       <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
                       <p className="text-muted-foreground">{agentDetails.description}</p>
                     </div>
-                    
+
                     {agentDetails.features && agentDetails.features.length > 0 && (
                       <div className="space-y-3">
                         <h3 className="font-semibold text-lg">Key Features</h3>
@@ -329,38 +346,40 @@ const Agent: React.FC = () => {
                         <Select
                           value={selectedLanguage || ""}
                           onValueChange={(value) => setSelectedLanguage(value)}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Select Language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {agentDetails.languages.map((lang) => (
-                            <SelectItem key={lang.isoCode} value={lang.isoCode}>
-                              {lang.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Select Language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agentDetails.languages.map((lang) => (
+                              <SelectItem key={lang.isoCode} value={lang.isoCode}>
+                                {lang.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       )}
-                      <Button
-                        onClick={async () => {
-                          if (agentDetails?.languages && !selectedLanguage) {
-                            toast.error('Please select a language');
-                            return;
-                          }
-                          await joinChannel();
-                          await startAgent();
-                        }}
-                        variant="default"
-                        size="lg"
-                        className="min-w-[200px]"
-                      >
-                        Start Conversation
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={async () => {
+                            if (agentDetails?.languages && !selectedLanguage) {
+                              toast.error('Please select a language');
+                              return;
+                            }
+                            await joinChannel();
+                            await startAgent();
+                          }}
+                          variant="default"
+                          size="lg"
+                          className="min-w-[200px]"
+                        >
+                          Start Conversation
+                        </Button>
+                      </div>
                     </>
                   )}
                   {isJoined && (
-                    <>
+                    <div className="flex items-center gap-2">
                       <Button
                         onClick={handleEndConversation}
                         variant="destructive"
@@ -369,19 +388,19 @@ const Agent: React.FC = () => {
                       >
                         End Conversation
                       </Button>
-                      <Button
+                      {isJoined && <Button
                         onClick={toggleMute}
                         variant={isMuted ? "destructive" : "outline"}
                         size="lg"
                         className="w-12 h-12"
                       >
                         {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                      </Button>
-                    </>
+                      </Button>}
+                    </div>
                   )}
                 </div>
 
-                {remoteUsers.length > 0 && (
+                {/* {remoteUsers.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <div className="flex -space-x-2">
                       {remoteUsers.slice(0, 3).map((user) => (
@@ -397,12 +416,38 @@ const Agent: React.FC = () => {
                     </div>
                     <span>{remoteUsers.length} user{remoteUsers.length !== 1 ? 's' : ''} in channel</span>
                   </div>
-                )}
+                )} */}
               </div>
+            </div>
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => setShowTranscriptions(!showTranscriptions)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                {showTranscriptions ? (
+                  <>
+                    <MessageSquareOff className="h-4 w-4" />
+                    Hide Transcriptions
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-4 w-4" />
+                    Show Transcriptions
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
       </main>
+      <div className="container mx-auto p-4 max-w-4xl">
+        <TranscriptionList
+          transcripts={transcripts}
+          isVisible={showTranscriptions}
+        />
+      </div>
       <FeedbackDialog ref={feedbackDialogRef}>
         <div className="hidden" />
       </FeedbackDialog>
@@ -410,7 +455,7 @@ const Agent: React.FC = () => {
         ref={platformUsageDialogRef}
         feedbackDialogRef={feedbackDialogRef}
       />
-    </div >
+    </div>
   );
 };
 

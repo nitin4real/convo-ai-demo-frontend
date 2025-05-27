@@ -1,4 +1,5 @@
-
+import { IMessage } from '@/types/agent.types'
+import { SPEAKER_MAP } from '../constant/constants'
 export type TDataChunk = {
     message_id: string
     part_idx: number
@@ -119,13 +120,27 @@ export class MessageEngine {
     private _messageCache: Record<string, TDataChunk[]> = {}
     private _messageCacheTimeout: number = DEFAULT_MESSAGE_CACHE_TIMEOUT
 
-    public handleStreamMessage(stream: Uint8Array) {
+    public handleStreamMessage(stream: Uint8Array): IMessage | undefined {
         const chunk = this.streamMessage2Chunk(stream)
+        let transcript: IMessage | undefined = undefined
         this.handleChunk<
-            IUserTranscription | IAgentTranscription | IMessageInterrupt
+            IUserTranscription | IAgentTranscription
         >(chunk, (message) => {
-            console.log('handleStreamMessage', message)
+            if (message.object === ETranscriptionObjectType.USER_TRANSCRIPTION) {
+                transcript = {
+                    speaker: SPEAKER_MAP.USER,
+                    transcription: message?.text,
+                    turn_id: message?.turn_id,
+                }
+            } else if (message.object === ETranscriptionObjectType.AGENT_TRANSCRIPTION) {
+                transcript = {
+                    speaker: SPEAKER_MAP.ASSISTANT,
+                    transcription: message?.text,
+                    turn_id: message?.turn_id,
+                }
+            }
         })
+        return transcript
     }
 
     public streamMessage2Chunk(stream: Uint8Array) {

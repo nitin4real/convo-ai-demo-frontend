@@ -6,7 +6,8 @@ import AgoraRTC, {
   IRemoteAudioTrack,
   UID
 } from 'agora-rtc-sdk-ng';
-// import { messageEngine } from './agora.message.service';
+import { messageEngine } from './agora.message.service';
+import { IMessage } from '../types/agent.types';
 
 export interface AgoraChannelResponse {
   appId: string;
@@ -25,6 +26,7 @@ export interface AgoraServiceCallbacks {
   onUserLeft?: (uid: UID) => void;
   onUserPublished?: (user: RemoteUser) => void;
   onUserUnpublished?: (user: RemoteUser) => void;
+  onMessage?: (message: IMessage) => void;
 }
 
 class AgoraService {
@@ -73,9 +75,12 @@ class AgoraService {
       }
     });
 
-    // this.client.on('stream-message', (_: UID, payload: Uint8Array) => {
-    //   messageEngine.handleStreamMessage(payload)
-    // })
+    this.client.on('stream-message', (_: UID, payload: Uint8Array) => {
+      const messages = messageEngine.handleStreamMessage(payload)
+      if (messages) {
+        this.callbacks.onMessage?.(messages)
+      }
+    })
 
   }
 
