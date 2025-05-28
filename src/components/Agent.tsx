@@ -320,7 +320,7 @@ const Agent: React.FC = () => {
             <CardContent className="pt-8  h-full">
               <div className="space-y-8 h-full flex flex-col justify-between">
                 <div className="flex flex-col items-center gap-6">
-                  <img src={AgoraAIRec} alt="Agora AI Rec" className="w-64 h-64 dark:invert" />
+                  <img src={AgoraAIRec} alt="Agora AI Rec" className="w-54 h-40 dark:invert" />
                   {agentDetails && (
                     <div className="text-center space-y-4 max-w-2xl">
                       <div>
