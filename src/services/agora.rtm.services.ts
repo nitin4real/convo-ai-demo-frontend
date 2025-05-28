@@ -1,5 +1,3 @@
-import axios from '../config/axios.config';
-import { API_CONFIG } from '../config/api.config';
 import AgoraRTM, { RTMClient } from 'agora-rtm-sdk';
 
 const { RTM } = AgoraRTM;
