@@ -14,6 +14,7 @@ export interface AgoraChannelResponse {
   channelName: string;
   token: string;
   uid: number;
+  rtmToken: string;
 }
 
 export interface RemoteUser {

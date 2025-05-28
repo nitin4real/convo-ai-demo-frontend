@@ -41,7 +41,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <div className="flex justify-center">
-          <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
+          <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30 dark:invert" />
         </div>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">

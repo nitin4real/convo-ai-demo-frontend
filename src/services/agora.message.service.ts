@@ -211,11 +211,11 @@ export class MessageEngine {
                     .join('')
 
                 // decode message
-                console.log('[message]', atob(message))
+                // console.log('[message]', atob(message))
 
                 const decodedMessage = JSON.parse(atob(message))
 
-                console.log('[decodedMessage]', decodedMessage)
+                // console.log('[decodedMessage]', decodedMessage)
 
                 // callback
                 callback?.(decodedMessage)

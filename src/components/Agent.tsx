@@ -8,14 +8,17 @@ import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraRTCService, RemoteUser } from '../services/agora.rtc.service';
 import { AgentTile, IMessage, StartAgentRequest, StartAgentResponse } from '../types/agent.types';
-import { AIAgentIcon } from './AIAgentIcon';
+import { MainCardHeader } from './MainCardHeader';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { TranscriptionList } from './TranscriptionList';
+import AgoraRTMService from '../services/agora.rtm.services';
+import { MetaDataView } from './MetaDataView';
+import { Layout } from '@/types/agent.types';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -27,6 +30,9 @@ const Agent: React.FC = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAgentStarted, setIsAgentStarted] = useState(false);
+  // ref for agoraRTMService
+  const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
+  const [metaData, setMetaData] = useState<any[]>([]);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
@@ -122,6 +128,17 @@ const Agent: React.FC = () => {
       try {
         const info = await agoraRTCService.getChannelInfo(agentId || '');
         setChannelInfo(info);
+        agoraRTMServiceRef.current = new AgoraRTMService({
+          appId: info.appId,
+          token: info.rtmToken,
+          channel: info.channelName,
+          uid: info.uid.toString()
+        });
+        agoraRTMServiceRef.current?.setCallbacks({
+          onMessage: (message) => {
+            setMetaData(prev => [...prev, message]);
+          }
+        });
       } catch (error) {
         console.error('Failed to get channel info:', error);
       }
@@ -211,6 +228,7 @@ const Agent: React.FC = () => {
 
     try {
       await agoraRTCService.joinChannel(channelInfo);
+      await agoraRTMServiceRef.current?.login();
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
@@ -219,6 +237,7 @@ const Agent: React.FC = () => {
 
   const leaveChannel = async () => {
     await agoraRTCService.leaveChannel();
+    await agoraRTMServiceRef.current?.logout();
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
@@ -280,174 +299,155 @@ const Agent: React.FC = () => {
     );
   }
 
+  let grid = '';
+  let mainClass = 'max-w-4xl';
+
+  if (showTranscriptions && agentDetails?.layout === Layout.METADATA_TRANSCRIPT) {
+    grid = 'grid grid-cols-3 gap-4 w-[100%]';
+    mainClass = 'max-w-[90%] ';
+  } else if (showTranscriptions || agentDetails?.layout === Layout.METADATA_TRANSCRIPT) {
+    grid = 'grid grid-cols-2 gap-4 w-[100%]';
+    mainClass = 'max-w-[70%] ';
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header feedbackDialogRef={feedbackDialogRef} />
-
-      <main className="container mx-auto p-4 max-w-4xl">
-        <Card className="shadow-lg">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <AIAgentIcon size="md" variant="glow" />
-                <span>{agentDetails?.title || 'Agent Interface'}</span>
-              </CardTitle>
-              {isAgentStarted && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>Active</span>
-                  {remainingTime !== null && (
-                    <span className="ml-2 text-muted-foreground">
-                      {String(Math.floor(remainingTime / 60)).padStart(2, '0')}:{Math.floor(remainingTime % 60).toString().padStart(2, '0')}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-8">
-            <div className="space-y-8">
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-32 h-32 rounded-full bg-primary/5 flex items-center justify-center">
-                  <img src={AgoraAIRec} alt="Agora AI Rec" className="w-24 h-24" />
-                </div>
-
-                {agentDetails && (
-                  <div className="text-center space-y-4 max-w-2xl">
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
-                      <p className="text-muted-foreground">{agentDetails.description}</p>
-                    </div>
-
-                    {agentDetails.features && agentDetails.features.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold text-lg">Key Features</h3>
-                        <div className="flex flex-wrap justify-center gap-2">
-                          {agentDetails.features.map((feature, index) => (
-                            <div
-                              key={index}
-                              className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
-                            >
-                              {feature}
-                            </div>
-                          ))}
-                        </div>
+      <main className={`container mx-auto p-4 ${mainClass} h-[90vh]`}>
+        <div className={`${grid} h-full`}>
+          <Card className="shadow-lg h-full">
+            <MainCardHeader agentDetails={agentDetails} isAgentStarted={isAgentStarted} remainingTime={remainingTime} />
+            <CardContent className="pt-8  h-full">
+              <div className="space-y-8 h-full flex flex-col justify-between">
+                <div className="flex flex-col items-center gap-6">
+                  <img src={AgoraAIRec} alt="Agora AI Rec" className="w-64 h-64 dark:invert" />
+                  {agentDetails && (
+                    <div className="text-center space-y-4 max-w-2xl">
+                      <div>
+                        <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
+                        <p className="text-muted-foreground">{agentDetails.description}</p>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
 
-              <div className="flex flex-col items-center gap-6 pt-4">
-                <div className="flex flex-col items-center gap-4">
-                  {!isJoined && !isAgentStarted && channelInfo && (
-                    <>
-                      {agentDetails?.languages && (
-                        <Select
-                          value={selectedLanguage || ""}
-                          onValueChange={(value) => setSelectedLanguage(value)}
-                        >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Select Language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {agentDetails.languages.map((lang) => (
-                              <SelectItem key={lang.isoCode} value={lang.isoCode}>
-                                {lang.name}
-                              </SelectItem>
+                      {agentDetails.features && agentDetails.features.length > 0 && (
+                        <div className="space-y-3">
+                          <h3 className="font-semibold text-lg">Key Features</h3>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {agentDetails.features.map((feature, index) => (
+                              <div
+                                key={index}
+                                className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
+                              >
+                                {feature}
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </div>
+                        </div>
                       )}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={async () => {
-                            if (agentDetails?.languages && !selectedLanguage) {
-                              toast.error('Please select a language');
-                              return;
-                            }
-                            await joinChannel();
-                            await startAgent();
-                          }}
-                          variant="default"
-                          size="lg"
-                          className="min-w-[200px]"
-                        >
-                          Start Conversation
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                  {isJoined && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={handleEndConversation}
-                        variant="destructive"
-                        size="lg"
-                        className="min-w-[200px]"
-                      >
-                        End Conversation
-                      </Button>
-                      {isJoined && <Button
-                        onClick={toggleMute}
-                        variant={isMuted ? "destructive" : "outline"}
-                        size="lg"
-                        className="w-12 h-12"
-                      >
-                        {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                      </Button>}
                     </div>
                   )}
                 </div>
-
-                {/* {remoteUsers.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex -space-x-2">
-                      {remoteUsers.slice(0, 3).map((user) => (
-                        <div key={user.uid} className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs">U</span>
-                        </div>
-                      ))}
-                      {remoteUsers.length > 3 && (
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs">+{remoteUsers.length - 3}</span>
+                <div className=''>
+                  <div className="flex flex-col items-center gap-6 pt-4">
+                    <div className="flex flex-col items-center gap-4">
+                      {!isJoined && !isAgentStarted && channelInfo && (
+                        <>
+                          {agentDetails?.languages && (
+                            <Select
+                              value={selectedLanguage || ""}
+                              onValueChange={(value) => setSelectedLanguage(value)}
+                            >
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Select Language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {agentDetails.languages.map((lang) => (
+                                  <SelectItem key={lang.isoCode} value={lang.isoCode}>
+                                    {lang.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={async () => {
+                                if (agentDetails?.languages && !selectedLanguage) {
+                                  toast.error('Please select a language');
+                                  return;
+                                }
+                                await joinChannel();
+                                await startAgent();
+                              }}
+                              variant="default"
+                              size="lg"
+                              className="min-w-[200px]"
+                            >
+                              Start Conversation
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                      {isJoined && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={handleEndConversation}
+                            variant="destructive"
+                            size="lg"
+                            className="min-w-[200px]"
+                          >
+                            End Conversation
+                          </Button>
+                          {isJoined && <Button
+                            onClick={toggleMute}
+                            variant={isMuted ? "destructive" : "outline"}
+                            size="lg"
+                            className="w-12 h-12"
+                          >
+                            {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                          </Button>}
                         </div>
                       )}
                     </div>
-                    <span>{remoteUsers.length} user{remoteUsers.length !== 1 ? 's' : ''} in channel</span>
                   </div>
-                )} */}
+                  <div className="flex justify-end m-4 items-end">
+                    <Button
+                      onClick={() => setShowTranscriptions(!showTranscriptions)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      {showTranscriptions ? (
+                        <>
+                          <MessageSquareOff className="h-4 w-4" />
+                          Hide Transcriptions
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-4 w-4" />
+                          Show Transcriptions
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+          {agentDetails?.layout === Layout.METADATA_TRANSCRIPT && (
+            <div className="h-full">
+              <MetaDataView metaData={metaData} />
             </div>
-            <div className="flex justify-end mb-4">
-              <Button
-                onClick={() => setShowTranscriptions(!showTranscriptions)}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                {showTranscriptions ? (
-                  <>
-                    <MessageSquareOff className="h-4 w-4" />
-                    Hide Transcriptions
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-4 w-4" />
-                    Show Transcriptions
-                  </>
-                )}
-              </Button>
+          )}
+          {showTranscriptions && (
+            <div className="h-full">
+              <TranscriptionList
+                transcripts={transcripts}
+                isVisible={showTranscriptions}
+              />
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </main>
-      <div className="container mx-auto p-4 max-w-4xl">
-        <TranscriptionList
-          transcripts={transcripts}
-          isVisible={showTranscriptions}
-        />
-      </div>
       <FeedbackDialog ref={feedbackDialogRef}>
         <div className="hidden" />
       </FeedbackDialog>
@@ -459,4 +459,4 @@ const Agent: React.FC = () => {
   );
 };
 
-export default Agent; 
+export default Agent;

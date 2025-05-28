@@ -35,10 +35,17 @@ export interface AgentTile {
   description: string;
   features: string[];
   languages: AgentLanguage[];
+  layout: Layout;
 }
 
 export interface IMessage {
   speaker: string;
   transcription: string;
   turn_id: number;
+}
+
+
+export const enum Layout {
+  DEFAULT = 'DEFAULT',
+  METADATA_TRANSCRIPT = 'METADATA_TRANSCRIPT',
 }
