@@ -29,7 +29,7 @@ export interface AgoraServiceCallbacks {
   onMessage?: (message: IMessage) => void;
 }
 
-class AgoraService {
+class AgoraRTCService {
   private client: IAgoraRTCClient;
   private localAudioTrack: IMicrophoneAudioTrack | null = null;
   private remoteUsers: Map<UID, RemoteUser> = new Map();
@@ -131,4 +131,4 @@ class AgoraService {
   }
 }
 
-export const agoraService = new AgoraService();
+export const agoraRTCService = new AgoraRTCService();

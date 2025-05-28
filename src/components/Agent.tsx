@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
-import { AgoraChannelResponse, agoraService, RemoteUser } from '../services/agora.service';
+import { AgoraChannelResponse, agoraRTCService, RemoteUser } from '../services/agora.rtc.service';
 import { AgentTile, IMessage, StartAgentRequest, StartAgentResponse } from '../types/agent.types';
 import { AIAgentIcon } from './AIAgentIcon';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
@@ -120,7 +120,7 @@ const Agent: React.FC = () => {
   useEffect(() => {
     const initializeChannel = async () => {
       try {
-        const info = await agoraService.getChannelInfo(agentId || '');
+        const info = await agoraRTCService.getChannelInfo(agentId || '');
         setChannelInfo(info);
       } catch (error) {
         console.error('Failed to get channel info:', error);
@@ -137,7 +137,7 @@ const Agent: React.FC = () => {
   }, [agentId]);
 
   useEffect(() => {
-    agoraService.setCallbacks({
+    agoraRTCService.setCallbacks({
       onUserJoined: (user) => {
         console.log('Loggin Service', 'User joined:', user);
         setRemoteUsers(prev => [...prev, user]);
@@ -210,7 +210,7 @@ const Agent: React.FC = () => {
     if (!channelInfo) return;
 
     try {
-      await agoraService.joinChannel(channelInfo);
+      await agoraRTCService.joinChannel(channelInfo);
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
@@ -218,7 +218,7 @@ const Agent: React.FC = () => {
   };
 
   const leaveChannel = async () => {
-    await agoraService.leaveChannel();
+    await agoraRTCService.leaveChannel();
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
@@ -229,7 +229,7 @@ const Agent: React.FC = () => {
   const toggleMute = () => {
     console.log('Current mute state', isMuted);
     console.log('Toggling mute state', !isMuted);
-    agoraService.toggleAudio(isMuted);
+    agoraRTCService.toggleAudio(isMuted);
     setIsMuted(!isMuted);
   };
 
