@@ -168,8 +168,16 @@ const Agent: React.FC = () => {
           if (prev.length > 0) {
             const lastMessage = prev[prev.length - 1];
             if (lastMessage.turn_id === message.turn_id && lastMessage.speaker === message.speaker) {
+              // compare the last message with the new message
+              if (lastMessage.transcription === message.transcription) {
+                return prev;
+              }
               return [...prev.slice(0, -1), message];
             } else {
+              // check if the new message is the same as the last message
+              if (lastMessage.transcription === message.transcription) {
+                return prev;
+              }
               return [...prev, message];
             }
           }
