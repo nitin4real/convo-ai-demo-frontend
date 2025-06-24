@@ -45,7 +45,7 @@ const Login: React.FC = () => {
         </div>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome to ConvoAI Demo
+            Welcome to {APP_CONFIG.NAME}
           </CardTitle>
         </CardHeader>
         {error && (
