@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'Agora ConvoAI Demo',
-  SHORT_NAME: 'Agora ConvoAI',
+  NAME: 'Agora ConvoSpace',
+  SHORT_NAME: 'Agora ConvoSpace',
   DESCRIPTION: 'Your AI Assistant Hub',
 } as const; 
