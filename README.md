@@ -75,20 +75,12 @@ src/
    ```bash
    npm install
    ```
-
-3. **Configure environment variables**
-   Create a `.env` file in the root directory:
-   ```env
-   VITE_AGORA_APP_ID=your_agora_app_id
-   VITE_API_BASE_URL=https://convo.agoraaidemo.in:3009
-   ```
-
-4. **Start the development server**
+3. **Start the development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+4. **Open your browser**
    Navigate to `http://localhost:5173`
 
 ### Available Scripts
