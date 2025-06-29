@@ -1,4 +1,6 @@
-import AgoraAIRec from '@/assets/agora-rec.svg';
+// import AgoraAIRec from '@/assets/agora-rec.svg';
+import AgoraAIRec from '@/assets/agora-blue.svg';
+
 import { handleUserErrors } from '@/utils/toast.utils';
 import { Eye, EyeOff } from 'lucide-react';
 import React, { FormEvent, useState } from 'react';
@@ -41,7 +43,7 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <div className="flex justify-center">
-          <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30 dark:invert" />
+          <img src={AgoraAIRec} alt="Agora AI Rec" className="h-30" />
         </div>
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">

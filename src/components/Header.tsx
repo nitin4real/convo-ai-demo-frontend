@@ -70,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
           <div className="flex items-center space-x-2">
             {isAuthenticated ? (
               <>
-                <DropdownMenu>
+                {/* <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
                       <Settings className="h-4 w-4" />
@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
                       Settings
                     </DropdownMenuItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu> */}
                 <Button 
                   variant="destructive"
                   onClick={handleLogout}
