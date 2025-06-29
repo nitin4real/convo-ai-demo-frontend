@@ -1,6 +1,6 @@
 import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AgentTile, AgentType } from '../types/agent.types';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
@@ -16,16 +16,20 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 
 const AgentsList: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
   const [agents, setAgents] = useState<AgentTile[]>([]);
+  const [allAgents, setAllAgents] = useState<AgentTile[]>([]);
   const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
     const fetchAgentTypes = async () => {
@@ -51,7 +55,7 @@ const AgentsList: React.FC = () => {
           : API_CONFIG.ENDPOINTS.AGENT.AGENTS;
         
         const response = await axios.get<AgentTile[]>(endpoint);
-        setAgents(response.data);
+        setAllAgents(response.data);
         setError(null);
       } catch (err) {
         handleUserErrors(err);
@@ -65,8 +69,27 @@ const AgentsList: React.FC = () => {
     fetchAgents();
   }, [selectedType]);
 
+  // Filter agents based on search query and selected type
+  useEffect(() => {
+    let filteredAgents = allAgents;
+
+    // Filter by search query
+    if (searchQuery) {
+      filteredAgents = filteredAgents.filter(agent =>
+        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setAgents(filteredAgents);
+  }, [allAgents, searchQuery]);
+
   const handleAgentClick = (agentId: string) => {
     navigate(`/agent/${agentId}`);
+  };
+
+  const clearSearch = () => {
+    setSearchParams({});
   };
 
   if (loading) {
@@ -111,10 +134,14 @@ const AgentsList: React.FC = () => {
     <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
       <AIAgentIcon size="lg" variant="glow" />
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold">No Agents Available Yet</h2>
+        <h2 className="text-2xl font-semibold">
+          {searchQuery ? 'No Agents Found' : 'No Agents Available Yet'}
+        </h2>
         <p className="text-muted-foreground max-w-md">
-          We're working on adding more agents to enhance your experience. 
-          Check back soon for exciting new AI companions!
+          {searchQuery 
+            ? `No agents found matching "${searchQuery}". Try a different search term.`
+            : "We're working on adding more agents to enhance your experience. Check back soon for exciting new AI companions!"
+          }
         </p>
       </div>
     </div>
@@ -125,7 +152,22 @@ const AgentsList: React.FC = () => {
       <Header feedbackDialogRef={feedbackDialogRef} />
       <main className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">All Agents</h1>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-3xl font-bold">All Agents</h1>
+            {searchQuery && (
+              <div className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-full">
+                <span className="text-sm text-primary">Search: "{searchQuery}"</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="h-6 w-6 p-0 hover:bg-primary/20"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2">

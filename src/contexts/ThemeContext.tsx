@@ -14,7 +14,7 @@ const THEME_STORAGE_KEY = 'app-theme';
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     // Try to get theme from localStorage, default to 'light' if not found
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme;
+    // const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as Theme;
     return 'light';
   });
 

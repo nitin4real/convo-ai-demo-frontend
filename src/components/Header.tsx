@@ -1,21 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from './ui/dropdown-menu';
-import { Settings, User, LogOut, MessageSquare, LogIn, Users, LayoutDashboard, Sun, Moon, Monitor } from 'lucide-react';
+import { Input } from './ui/input';
+
+import { LogOut, MessageSquare, LogIn, Users, LayoutDashboard, Search } from 'lucide-react';
 import { APP_CONFIG } from '../config/app.config';
 import { FeedbackDialogRef } from './FeedbackDialog';
-import { useTheme } from '../contexts/ThemeContext';
+// import { useTheme } from '../contexts/ThemeContext';
 
 interface HeaderProps {
   feedbackDialogRef?: React.RefObject<FeedbackDialogRef | null>;
@@ -24,7 +16,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
   const navigate = useNavigate();
   const isAuthenticated = !!authService.getToken();
-  const { setTheme } = useTheme();
+  // const { setTheme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
     authService.logout();
@@ -33,6 +26,19 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
 
   const handleLogin = () => {
     navigate('/login');
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/agents?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -68,6 +74,29 @@ const Header: React.FC<HeaderProps> = ({ feedbackDialogRef }) => {
             )}
           </div>
           <div className="flex items-center space-x-2">
+            {isAuthenticated && (
+              <div className="flex items-center space-x-2 mr-4">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search agents..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="w-64 pr-10"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSearch}
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    disabled={!searchQuery.trim()}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
             {isAuthenticated ? (
               <>
                 {/* <DropdownMenu>
