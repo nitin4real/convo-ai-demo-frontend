@@ -20,6 +20,7 @@ import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
 import { MetaDataView } from './MetaDataView';
 import { Layout } from '@/types/agent.types';
+import CustomAgent, { IProperties } from './CustomAgent/CustomAgent';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -44,6 +45,7 @@ const Agent: React.FC = () => {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
+  const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -192,16 +194,28 @@ const Agent: React.FC = () => {
     if (!agentId || !channelInfo) return;
 
     try {
-      const request: StartAgentRequest = {
-        channelName: channelInfo.channelName,
-        languageCode: selectedLanguage || ""
-      };
-      const response = await axios.post<StartAgentResponse>(
-        `${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`,
-        request
-      );
-      convoAgentId.current = response.data.agent_id;
-      console.log('Loggin Service', 'Agent started:', response.data);
+      if (agentDetails?.id === 'custom' && customAgentProperties) {
+        const response = await axios.post<StartAgentResponse>(
+          `${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`,
+          {
+            properties: customAgentProperties,
+            channelName: channelInfo.channelName,
+          }
+        );
+        convoAgentId.current = response.data.agent_id;
+        console.log('Loggin Service', 'Agent started:', response.data);
+      } else {
+        const request: StartAgentRequest = {
+          channelName: channelInfo.channelName,
+          languageCode: selectedLanguage || ""
+        };
+        const response = await axios.post<StartAgentResponse>(
+          `${API_CONFIG.ENDPOINTS.AGENT.START}/${agentId}`,
+          request
+        );
+        convoAgentId.current = response.data.agent_id;
+        console.log('Loggin Service', 'Agent started:', response.data);
+      }
       toast.success('Conversation started');
       setIsAgentStarted(true);
       startHeartbeat();
@@ -311,6 +325,19 @@ const Agent: React.FC = () => {
   let grid = '';
   let mainClass = 'max-w-4xl';
 
+  if (agentDetails?.id === 'custom' && !customAgentProperties) {
+    return <div className="min-h-screen bg-background">
+      <Header feedbackDialogRef={feedbackDialogRef} />
+
+      <CustomAgent
+        onCreateAgent={(agent: IProperties) => {
+          setCustomAgentProperties(agent);
+          console.log('Creating agent', agent);
+        }}
+      />
+    </div>
+  }
+
   if (showTranscriptions && agentDetails?.layout === Layout.METADATA_TRANSCRIPT) {
     grid = 'grid grid-cols-3 gap-4 w-[100%]';
     mainClass = 'max-w-[90%] ';
@@ -378,6 +405,19 @@ const Agent: React.FC = () => {
                             </Select>
                           )}
                           <div className="flex items-center gap-2">
+                            {agentDetails?.id === 'custom' && customAgentProperties && (
+                              <Button
+                                variant="default"
+                                size="lg"
+                                className="min-w-[200px]"
+                                onClick={() => {
+                                  setCustomAgentProperties(null);
+                                }}
+                              >
+                                Edit Agent Config
+                              </Button>
+                            )}
+
                             <Button
                               onClick={async () => {
                                 if (agentDetails?.languages && !selectedLanguage) {
