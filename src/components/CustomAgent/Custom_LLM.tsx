@@ -3,6 +3,7 @@ import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Separator } from "../ui/separator"
 import { Slider } from "../ui/slider"
+import { Textarea } from "../ui/textarea"
 
 interface OPENAI_LLM {
     url: string
@@ -152,6 +153,8 @@ const CustomLLM = ({ llmType, llmConfig, setLlmType, setLlmConfig }: CustomLLMPr
         setLlmConfig(newConfig)
     }
 
+    const systemMessage = llmConfig?.system_messages?.map((message: any) => message.content).join('\n') || ''
+
     return (
         <div className="space-y-4">
             <h3 className="text-lg font-semibold">Large Language Model (LLM)</h3>
@@ -181,6 +184,18 @@ const CustomLLM = ({ llmType, llmConfig, setLlmType, setLlmConfig }: CustomLLMPr
                         value={llmConfig.greeting_message || ''}
                         onChange={(e) => setLlmConfig({...llmConfig, greeting_message: e.target.value})}
                         placeholder="Hello, how can I help you today?"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="llm-system-messages">System Messages</Label>
+                    <Textarea
+                        id="llm-system-messages"
+                        value={systemMessage}
+                        onChange={(e) => {
+                            setLlmConfig({...llmConfig, system_messages: [{ role: 'system', content: e.target.value }]})
+                        }}
+                        placeholder="You are a helpful chatbot."
                     />
                 </div>
 
