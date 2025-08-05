@@ -14,7 +14,7 @@ import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
@@ -46,6 +46,7 @@ const Agent: React.FC = () => {
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
+  const videoRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -186,6 +187,16 @@ const Agent: React.FC = () => {
           }
           return [...prev, message];
         });
+      },
+      onUserPublished: (user, mediaType) => {
+        if (mediaType === 'video') {
+          user.videoTrack?.play(videoRef.current!);
+        }
+      },
+      onUserUnpublished: (user) => {
+        if (user.videoTrack) {
+          user.videoTrack.stop();
+        }
       }
     });
   }, []);
@@ -338,10 +349,10 @@ const Agent: React.FC = () => {
     </div>
   }
 
-  if (showTranscriptions && agentDetails?.layout === Layout.METADATA_TRANSCRIPT) {
+  if (showTranscriptions && (agentDetails?.layout === Layout.METADATA_TRANSCRIPT || agentDetails?.layout === Layout.AVATAR_TRANSCRIPT)) {
     grid = 'grid grid-cols-3 gap-4 w-[100%]';
     mainClass = 'max-w-[90%] ';
-  } else if (showTranscriptions || agentDetails?.layout === Layout.METADATA_TRANSCRIPT) {
+  } else if (showTranscriptions || (agentDetails?.layout === Layout.METADATA_TRANSCRIPT || agentDetails?.layout === Layout.AVATAR_TRANSCRIPT)) {
     grid = 'grid grid-cols-2 gap-4 w-[100%]';
     mainClass = 'max-w-[70%] ';
   }
@@ -482,6 +493,28 @@ const Agent: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+          {
+            agentDetails?.layout === Layout.AVATAR_TRANSCRIPT && (
+              <div className="h-full">
+                <Card className="shadow-lg h-full">
+                  <CardHeader className="border-b">
+                    <CardTitle className="text-2xl">Avatar</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4 flex justify-center items-center h-full">
+                    {
+                      isAgentStarted &&
+                        isJoined ?
+                        <video ref={videoRef} autoPlay className="w-[80%] rounded-lg" />
+                        :
+                        <div className="flex justify-center items-center h-full">
+                          <p className="text-muted-foreground">Conversation not started yet...</p>
+                        </div>
+                    }
+                  </CardContent>
+                </Card>
+              </div>
+            )
+          }
           {agentDetails?.layout === Layout.METADATA_TRANSCRIPT && (
             <div className="h-full">
               <MetaDataView metaData={metaData} />

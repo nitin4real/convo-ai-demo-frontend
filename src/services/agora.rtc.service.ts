@@ -4,6 +4,7 @@ import AgoraRTC, {
   IAgoraRTCClient,
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
+  IRemoteVideoTrack,
   UID
 } from 'agora-rtc-sdk-ng';
 import { messageEngine } from './agora.message.service';
@@ -20,12 +21,13 @@ export interface AgoraChannelResponse {
 export interface RemoteUser {
   uid: UID;
   audioTrack?: IRemoteAudioTrack;
+  videoTrack?: IRemoteVideoTrack;
 }
 
 export interface AgoraServiceCallbacks {
   onUserJoined?: (user: RemoteUser) => void;
   onUserLeft?: (uid: UID) => void;
-  onUserPublished?: (user: RemoteUser) => void;
+  onUserPublished?: (user: RemoteUser, mediaType: 'audio' | 'video') => void;
   onUserUnpublished?: (user: RemoteUser) => void;
   onMessage?: (message: IMessage) => void;
 }
@@ -53,20 +55,24 @@ class AgoraRTCService {
     });
 
     this.client.on('user-published', async (user, mediaType) => {
-      console.log('Loggin Service', 'User published:', user.uid, mediaType);
       if (mediaType === 'audio') {
         await this.client.subscribe(user, mediaType);
         const remoteUser = this.remoteUsers.get(user.uid);
         if (remoteUser) {
           remoteUser.audioTrack = user.audioTrack;
           remoteUser.audioTrack?.play();
-          this.callbacks.onUserPublished?.(remoteUser);
+        }
+      } else if (mediaType === 'video') {
+        await this.client.subscribe(user, mediaType);
+        const remoteUser = this.remoteUsers.get(user.uid);
+        if (remoteUser) {
+          remoteUser.videoTrack = user.videoTrack;
+          this.callbacks.onUserPublished?.(remoteUser, mediaType);
         }
       }
     });
 
     this.client.on('user-unpublished', (user, mediaType) => {
-      console.log('Loggin Service', 'User unpublished:', user.uid, mediaType);
       if (mediaType === 'audio') {
         const remoteUser = this.remoteUsers.get(user.uid);
         if (remoteUser) {
