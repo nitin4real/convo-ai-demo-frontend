@@ -1,7 +1,7 @@
 // import AgoraAIRec from '@/assets/agora-rec.svg';
 import AgoraAIRec from '@/assets/agora-blue.svg';
 import { handleUserErrors } from '@/utils/toast.utils';
-import { Mic, MicOff, MessageSquare, MessageSquareOff } from 'lucide-react';
+import { Mic, MicOff, Captions, CaptionsOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -394,7 +394,7 @@ const Agent: React.FC = () => {
                   )}
                 </div>
                 <div className=''>
-                  <div className="flex flex-col items-center gap-6 pt-4">
+                  <div className="flex flex-col items-center gap-6 p-4">
                     <div className="flex flex-col items-center gap-4">
                       {!isJoined && !isAgentStarted && channelInfo && (
                         <>
@@ -444,6 +444,15 @@ const Agent: React.FC = () => {
                             >
                               Start Conversation
                             </Button>
+                            <Button
+                              title="Transcriptions"
+                              onClick={() => setShowTranscriptions(!showTranscriptions)}
+                              variant={showTranscriptions ? "destructive" : "outline"}
+                              size="lg"
+                              className="w-10 h-10"
+                            >
+                              {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
+                            </Button>
                           </div>
                         </>
                       )}
@@ -457,37 +466,26 @@ const Agent: React.FC = () => {
                           >
                             End Conversation
                           </Button>
+                          <Button
+                            title="Transcriptions"
+                            onClick={() => setShowTranscriptions(!showTranscriptions)}
+                            variant={showTranscriptions ? "destructive" : "outline"}
+                            size="lg"
+                            className="w-10 h-10"
+                          >
+                            {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
+                          </Button>
                           {isJoined && <Button
                             onClick={toggleMute}
                             variant={isMuted ? "destructive" : "outline"}
                             size="lg"
-                            className="w-12 h-12"
+                            className="w-10 h-10"
                           >
                             {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                           </Button>}
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div className="flex justify-end m-4 items-end">
-                    <Button
-                      onClick={() => setShowTranscriptions(!showTranscriptions)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                    >
-                      {showTranscriptions ? (
-                        <>
-                          <MessageSquareOff className="h-4 w-4" />
-                          Hide Transcriptions
-                        </>
-                      ) : (
-                        <>
-                          <MessageSquare className="h-4 w-4" />
-                          Show Transcriptions
-                        </>
-                      )}
-                    </Button>
                   </div>
                 </div>
               </div>
