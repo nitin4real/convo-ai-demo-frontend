@@ -35,7 +35,7 @@ export const TranscriptionList: React.FC<TranscriptionListProps> = ({ transcript
 
 
   return (
-    <Card className="shadow-lg p-2 h-full">
+    <Card className="shadow-lg p-2 h-full overflow-y-clip">
       <div className="p-2 border-b">
         <div className="flex items-center justify-between">
           <div>

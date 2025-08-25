@@ -2,6 +2,7 @@ import axios from '../config/axios.config';
 import { API_CONFIG } from '../config/api.config';
 import AgoraRTC, {
   IAgoraRTCClient,
+  ICameraVideoTrack,
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
   IRemoteVideoTrack,
@@ -35,6 +36,7 @@ export interface AgoraServiceCallbacks {
 class AgoraRTCService {
   private client: IAgoraRTCClient;
   private localAudioTrack: IMicrophoneAudioTrack | null = null;
+  private localVideoTrack: ICameraVideoTrack | null = null;
   private remoteUsers: Map<UID, RemoteUser> = new Map();
   private callbacks: AgoraServiceCallbacks = {};
 
@@ -112,6 +114,11 @@ class AgoraRTCService {
 
     this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     await this.client.publish([this.localAudioTrack]);
+
+    // only for avatar landscape transcript
+
+    // this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+    // await this.client.publish([this.localVideoTrack]);
   }
 
   async leaveChannel(): Promise<void> {
@@ -125,6 +132,10 @@ class AgoraRTCService {
 
   getLocalAudioTrack(): IMicrophoneAudioTrack | null {
     return this.localAudioTrack;
+  }
+
+  getLocalVideoTrack(): ICameraVideoTrack | null {
+    return this.localVideoTrack;
   }
 
   getRemoteUsers(): RemoteUser[] {

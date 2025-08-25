@@ -1,7 +1,6 @@
 // import AgoraAIRec from '@/assets/agora-rec.svg';
 import AgoraAIRec from '@/assets/agora-blue.svg';
 import { handleUserErrors } from '@/utils/toast.utils';
-import { Mic, MicOff, Captions, CaptionsOff } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,14 +12,13 @@ import { MainCardHeader } from './MainCardHeader';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
-import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
 import { MetaDataView } from './MetaDataView';
 import { Layout } from '@/types/agent.types';
 import CustomAgent, { IProperties } from './CustomAgent/CustomAgent';
+import { AgentControls } from './AgentControls';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -47,6 +45,7 @@ const Agent: React.FC = () => {
   const [showTranscriptions, setShowTranscriptions] = useState(false);
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
   const videoRef = useRef<any>(null);
+  // const selfVideoRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -263,6 +262,12 @@ const Agent: React.FC = () => {
     try {
       await agoraRTCService.joinChannel(channelInfo);
       await agoraRTMServiceRef.current?.login();
+      // const localVideoTrack = agoraRTCService.getLocalVideoTrack();
+      // if (localVideoTrack) {
+      //   console.log('Playing local video track', localVideoTrack);
+      //   localVideoTrack.play(selfVideoRef.current!);
+      //   console.log('Local video track played', selfVideoRef.current);
+      // }
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
@@ -357,6 +362,68 @@ const Agent: React.FC = () => {
     mainClass = 'max-w-[70%] ';
   }
 
+  // const SelfView = () => <div className=''>
+  //   <video ref={selfVideoRef} autoPlay className="w-full h-full object-cover rounded-lg" />
+  // </div>
+
+  const agentControls = () => <AgentControls
+    isJoined={isJoined}
+    isAgentStarted={isAgentStarted}
+    channelInfo={channelInfo}
+    agentDetails={agentDetails}
+    selectedLanguage={selectedLanguage || ""}
+    setSelectedLanguage={setSelectedLanguage}
+    customAgentProperties={customAgentProperties}
+    setCustomAgentProperties={setCustomAgentProperties}
+    showTranscriptions={showTranscriptions}
+    setShowTranscriptions={setShowTranscriptions}
+    joinChannel={joinChannel}
+    startAgent={startAgent}
+    handleEndConversation={handleEndConversation}
+    toggleMute={toggleMute}
+    isMuted={isMuted}
+  />
+
+  if (agentDetails?.layout === Layout.AVATAR_LANDSCAPE_TRANSCRIPT) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header feedbackDialogRef={feedbackDialogRef} />
+        <main className={`container mx-auto p-4 w-full h-[90vh] flex flex-row`}>
+          <Card className="shadow-lg h-full w-full">
+            <CardHeader className="border-b">
+              <CardTitle className="text-2xl">Avatar</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center items-center h-full overflow-auto">
+              {
+                isAgentStarted &&
+                  isJoined ?
+                  <video ref={videoRef} autoPlay className="w-full h-full object-cover rounded-lg" />
+                  :
+                  <div className="flex justify-center items-center h-full">
+                    <p className="text-muted-foreground">Conversation not started yet...</p>
+                  </div>
+              }
+            </CardContent>
+            <div className='absolute bottom-20 left-60'>
+              {agentControls()}
+            </div>
+          </Card>
+          {showTranscriptions && (
+            <div className="ml-5 w-[30vw]">
+              <TranscriptionList
+                transcripts={transcripts}
+                isVisible={showTranscriptions}
+              />
+            </div>
+          )}
+          {/* <div className='absolute bottom-20 right-60 border-2 border-red-500 rounded-lg'>
+            <SelfView />
+          </div> */}
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header feedbackDialogRef={feedbackDialogRef} />
@@ -374,7 +441,6 @@ const Agent: React.FC = () => {
                         <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
                         <p className="text-muted-foreground">{agentDetails.description}</p>
                       </div>
-
                       {agentDetails.features && agentDetails.features.length > 0 && (
                         <div className="space-y-3">
                           <h3 className="font-semibold text-lg">Key Features</h3>
@@ -393,101 +459,7 @@ const Agent: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className=''>
-                  <div className="flex flex-col items-center gap-6 p-4">
-                    <div className="flex flex-col items-center gap-4">
-                      {!isJoined && !isAgentStarted && channelInfo && (
-                        <>
-                          {agentDetails?.languages && (
-                            <Select
-                              value={selectedLanguage || ""}
-                              onValueChange={(value) => setSelectedLanguage(value)}
-                            >
-                              <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Select Language" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {agentDetails.languages.map((lang) => (
-                                  <SelectItem key={lang.isoCode} value={lang.isoCode}>
-                                    {lang.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          <div className="flex items-center gap-2">
-                            {agentDetails?.id === 'custom' && customAgentProperties && (
-                              <Button
-                                variant="default"
-                                size="lg"
-                                className="min-w-[200px]"
-                                onClick={() => {
-                                  setCustomAgentProperties(null);
-                                }}
-                              >
-                                Edit Agent Config
-                              </Button>
-                            )}
-
-                            <Button
-                              onClick={async () => {
-                                if (agentDetails?.languages && !selectedLanguage) {
-                                  toast.error('Please select a language');
-                                  return;
-                                }
-                                await joinChannel();
-                                await startAgent();
-                              }}
-                              variant="default"
-                              size="lg"
-                              className="min-w-[200px]"
-                            >
-                              Start Conversation
-                            </Button>
-                            <Button
-                              title="Transcriptions"
-                              onClick={() => setShowTranscriptions(!showTranscriptions)}
-                              variant={showTranscriptions ? "destructive" : "outline"}
-                              size="lg"
-                              className="w-10 h-10"
-                            >
-                              {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                      {isJoined && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            onClick={handleEndConversation}
-                            variant="destructive"
-                            size="lg"
-                            className="min-w-[200px]"
-                          >
-                            End Conversation
-                          </Button>
-                          <Button
-                            title="Transcriptions"
-                            onClick={() => setShowTranscriptions(!showTranscriptions)}
-                            variant={showTranscriptions ? "destructive" : "outline"}
-                            size="lg"
-                            className="w-10 h-10"
-                          >
-                            {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
-                          </Button>
-                          {isJoined && <Button
-                            onClick={toggleMute}
-                            variant={isMuted ? "destructive" : "outline"}
-                            size="lg"
-                            className="w-10 h-10"
-                          >
-                            {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                          </Button>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                {agentControls()}
               </div>
             </CardContent>
           </Card>
