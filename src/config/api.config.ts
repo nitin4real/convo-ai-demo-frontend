@@ -15,7 +15,8 @@ export const API_CONFIG = {
       AGENTS: '/api/agent/agents',
       AGENT_TYPES: '/api/agent/agent-types',
       AGENTS_BY_TYPE: '/api/agent/agents/:type',
-      AGENT_DETAILS: '/api/agent/:agentId'
+      AGENT_DETAILS: '/api/agent/:agentId',
+      START_SIP_CALL: '/api/agent/start-sip-call'
     },
     FEEDBACK: '/api/feedback'
   }
