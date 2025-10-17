@@ -14,6 +14,7 @@ import { MainCardHeader } from './MainCardHeader';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -50,6 +51,7 @@ const Agent: React.FC = () => {
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
   const videoRef = useRef<any>(null);
   // const selfVideoRef = useRef<any>(null);
+  const [isStartingOutbound, setIsStartingOutbound] = useState(false);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -346,6 +348,7 @@ const Agent: React.FC = () => {
   let mainClass = 'max-w-4xl';
 
   const startOutboundCall = async (phoneNumber: string) => {
+    setIsStartingOutbound(true);
     try {
       const request = {
         phoneNumber: phoneNumber,
@@ -361,6 +364,8 @@ const Agent: React.FC = () => {
     }
     catch (error: any) {
       console.error('Failed to start outbound call:', error);
+    } finally {
+      setIsStartingOutbound(false);
     }
   };
 
@@ -494,8 +499,16 @@ const Agent: React.FC = () => {
                     }
                   }}
                   className="max-w-[200px]"
+                  disabled={isStartingOutbound}
                 >
-                  Start Outbound Call
+                  {isStartingOutbound ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    'Start Outbound Call'
+                  )}
                 </Button>
               </div>
 
