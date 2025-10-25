@@ -59,7 +59,7 @@ const SIP_Agent: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
-
+  const lastEventIdRef = useRef<string | null>(null);
   useEffect(() => {
     const fetchAgentDetails = async () => {
       if (!agentId) return;
@@ -97,6 +97,8 @@ const SIP_Agent: React.FC = () => {
       // setCallerId(response?.data?.bufferLogs[0]?.callerId);
       const latestEvent = response?.data?.bufferLogs[0];
       if (latestEvent?.direction != 'inbound') return;
+      if(lastEventIdRef.current === latestEvent?.id) return;
+      lastEventIdRef.current = latestEvent?.id;
 
       if(latestEvent?.event === 'ringing'){
         setCallerId(latestEvent?.from);

@@ -58,6 +58,7 @@ const SIP_Agent: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
+  const lastEventIdRef = useRef<string | null>(null);
   // const selfVideoRef = useRef<any>(null);
 
   useEffect(() => {
@@ -231,6 +232,8 @@ const SIP_Agent: React.FC = () => {
       // setCallerId(response?.data?.bufferLogs[0]?.callerId);
       const latestEvent = response?.data?.bufferLogs[0];
       if (latestEvent?.direction != 'outbound') return;
+      if(lastEventIdRef.current === latestEvent?.id) return;
+      lastEventIdRef.current = latestEvent?.id;
 
       if (latestEvent?.event === 'call_ringing') {
         setOutboundState(OUTBOUND_STATES.RINGING);
