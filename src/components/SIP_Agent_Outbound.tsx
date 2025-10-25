@@ -42,7 +42,6 @@ const SIP_Agent: React.FC = () => {
   const { agentId } = useParams();
   const convoAgentId = useRef<string | null>(null);
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
-  const platformUsageDialogRef = useRef<PlatformUsageDialogRef>(null);
   const [channelInfo, setChannelInfo] = useState<AgoraChannelResponse | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -51,7 +50,6 @@ const SIP_Agent: React.FC = () => {
   const [outboundState, setOutboundState] = useState(OUTBOUND_STATES.IDLE);
   // ref for agoraRTMService
   const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
-  const [metaData] = useState<any[]>([]);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
@@ -61,10 +59,7 @@ const SIP_Agent: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
-  const [callerId] = useState<string | null>(null);
-  const [customAgentProperties] = useState<IProperties | null>(null);
   // const selfVideoRef = useRef<any>(null);
-  const [isStartingOutbound] = useState(false);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {

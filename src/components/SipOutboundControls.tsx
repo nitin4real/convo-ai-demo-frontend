@@ -29,13 +29,11 @@ interface ISipOutboundControlsProps {
 export const SipOutboundControls = (props: ISipOutboundControlsProps) => {
     const { isJoined,
         outboundState,
-        channelInfo,
         agentDetails,
         selectedLanguage,
         setSelectedLanguage,
         showTranscriptions,
         setShowTranscriptions,
-        joinChannel,
         initiateCall,
         handleEndConversation,
         toggleMute,
