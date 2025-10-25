@@ -96,7 +96,7 @@ const SIP_Agent: React.FC = () => {
     if(response?.data?.bufferLogs?.length > 0){
       // setCallerId(response?.data?.bufferLogs[0]?.callerId);
       const latestEvent = response?.data?.bufferLogs[0];
-      console.log('Buffer:', lastEventIdRef.current, latestEvent?.eventId);
+      console.log('Buffer:', lastEventIdRef.current, latestEvent);
       if (latestEvent?.direction != 'inbound' && latestEvent?.event != 'transfer_call') return;
       if(lastEventIdRef.current === latestEvent?.eventId) return;
       lastEventIdRef.current = latestEvent?.eventId;

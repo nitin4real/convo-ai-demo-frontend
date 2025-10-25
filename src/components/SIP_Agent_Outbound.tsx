@@ -231,9 +231,10 @@ const SIP_Agent: React.FC = () => {
     if (response?.data?.bufferLogs?.length > 0) {
       // setCallerId(response?.data?.bufferLogs[0]?.callerId);
       const latestEvent = response?.data?.bufferLogs[0];
+      console.log('Buffer:', lastEventIdRef.current, latestEvent);
       if (latestEvent?.direction != 'outbound' && latestEvent?.event != 'transfer_call') return;
-      if(lastEventIdRef.current === latestEvent?.id) return;
-      lastEventIdRef.current = latestEvent?.id;
+      if(lastEventIdRef.current === latestEvent?.eventId) return;
+      lastEventIdRef.current = latestEvent?.eventId;
 
       if (latestEvent?.event === 'call_ringing') {
         setOutboundState(OUTBOUND_STATES.RINGING);
