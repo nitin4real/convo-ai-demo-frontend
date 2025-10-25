@@ -41,7 +41,6 @@ export enum OUTBOUND_STATES {
 const SIP_Agent: React.FC = () => {
   const { agentId } = useParams();
   const convoAgentId = useRef<string | null>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
   const platformUsageDialogRef = useRef<PlatformUsageDialogRef>(null);
   const [channelInfo, setChannelInfo] = useState<AgoraChannelResponse | null>(null);
@@ -52,22 +51,20 @@ const SIP_Agent: React.FC = () => {
   const [outboundState, setOutboundState] = useState(OUTBOUND_STATES.IDLE);
   // ref for agoraRTMService
   const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
-  const [metaData, setMetaData] = useState<any[]>([]);
+  const [metaData] = useState<any[]>([]);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const [remainingTime] = useState<number | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
-  const [callerId, setCallerId] = useState<string | null>(null);
-  const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
-  const videoRef = useRef<any>(null);
+  const [callerId] = useState<string | null>(null);
+  const [customAgentProperties] = useState<IProperties | null>(null);
   // const selfVideoRef = useRef<any>(null);
-  const [isStartingOutbound, setIsStartingOutbound] = useState(false);
+  const [isStartingOutbound] = useState(false);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -132,10 +129,10 @@ const SIP_Agent: React.FC = () => {
           return [...prev, message];
         });
       },
-      onUserPublished: (user, mediaType) => {
+      onUserPublished: () => {
 
       },
-      onUserUnpublished: (user) => {
+      onUserUnpublished: () => {
 
       }
     });
@@ -191,14 +188,6 @@ const SIP_Agent: React.FC = () => {
     setIsMuted(!isMuted);
   };
 
-  const handleTimeout = () => {
-    console.log('Session expired, stopping heartbeat');
-    // stopHeartbeat();
-    leaveChannel();
-    setIsAgentStarted(false);
-    convoAgentId.current = null;
-    platformUsageDialogRef.current?.open();
-  };
 
 
   const handleEndConversation = async () => {
@@ -277,8 +266,8 @@ const SIP_Agent: React.FC = () => {
   };
 
   const startOutboundCall = async (phoneNumber: string) => {
-    setIsStartingOutbound(true);
-    setCallerId(phoneNumber);
+    // setIsStartingOutbound(true);
+    // setCallerId(phoneNumber);
     try {
       const request = {
         phoneNumber: phoneNumber,
@@ -327,7 +316,7 @@ const SIP_Agent: React.FC = () => {
       setOutboundState(OUTBOUND_STATES.IDLE);
       console.error('Failed to start outbound call:', error);
     } finally {
-      setIsStartingOutbound(false);
+      // setIsStartingOutbound(false);
     }
   };
 

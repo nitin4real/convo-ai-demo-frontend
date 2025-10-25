@@ -16,7 +16,6 @@ import {  PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Card, CardContent} from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
-import { IProperties } from './CustomAgent/CustomAgent';
 import { SipInboundControls } from './SipInboundControls';
 
 
@@ -43,7 +42,6 @@ const SIP_Agent: React.FC = () => {
   const convoAgentId = useRef<string | null>(null);
   const [callerId, setCallerId] = useState<string | null>(null);
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
-  const platformUsageDialogRef = useRef<PlatformUsageDialogRef>(null);
   const [channelInfo, setChannelInfo] = useState<AgoraChannelResponse | null>(null);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -57,7 +55,7 @@ const SIP_Agent: React.FC = () => {
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const [remainingTime] = useState<number | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
@@ -172,10 +170,10 @@ const SIP_Agent: React.FC = () => {
           return [...prev, message];
         });
       },
-      onUserPublished: (user, mediaType) => {
+      onUserPublished: () => {
 
       },
-      onUserUnpublished: (user) => {
+      onUserUnpublished: () => {
 
       }
     });
