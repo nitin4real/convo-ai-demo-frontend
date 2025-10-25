@@ -8,7 +8,7 @@ interface AgentListProps {
   agents: AgentTile[];
   loading: boolean;
   onBackClick: () => void;
-  onAgentClick: (agentId: string) => void;
+  onAgentClick: (agentId: string, agent: AgentTile) => void;
 }
 
 const AgentList: React.FC<AgentListProps> = ({ agents, loading, onBackClick, onAgentClick }) => {
@@ -52,7 +52,7 @@ const AgentList: React.FC<AgentListProps> = ({ agents, loading, onBackClick, onA
             <Card 
               key={agent.id}
               className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => onAgentClick(agent.id)}
+              onClick={() => onAgentClick(agent.id, agent)}
             >
               <CardHeader>
                 <CardTitle>{agent.title}</CardTitle>

@@ -39,6 +39,7 @@ class AgoraRTCService {
   private localVideoTrack: ICameraVideoTrack | null = null;
   private remoteUsers: Map<UID, RemoteUser> = new Map();
   private callbacks: AgoraServiceCallbacks = {};
+  private isSIPAgent: boolean = false;
 
   constructor() {
     this.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -62,6 +63,10 @@ class AgoraRTCService {
         const remoteUser = this.remoteUsers.get(user.uid);
         if (remoteUser) {
           remoteUser.audioTrack = user.audioTrack;
+          if (this.isSIPAgent) {
+            // skip
+            return;
+          }
           remoteUser.audioTrack?.play();
         }
       } else if (mediaType === 'video') {
@@ -93,6 +98,26 @@ class AgoraRTCService {
 
   }
 
+  muteRemoteUsers(): void {
+    this.remoteUsers.forEach(user => {
+      if (user.audioTrack) {
+        user.audioTrack?.stop();
+      }
+    });
+  }
+
+  unmuteRemoteUsers(): void {
+    this.remoteUsers.forEach(user => {
+      if (user.audioTrack) {
+        user.audioTrack?.play();
+      }
+    });
+  }
+
+  setAsSIPAgent(isSIPAgent: boolean): void {
+    this.isSIPAgent = isSIPAgent;
+  }
+
   setCallbacks(callbacks: AgoraServiceCallbacks) {
     this.callbacks = callbacks;
   }
@@ -104,6 +129,16 @@ class AgoraRTCService {
     return response.data;
   }
 
+  async getChannelInfoForSip(channelName: string): Promise<AgoraChannelResponse> {
+    const response = await axios.get<any>(
+      `${API_CONFIG.ENDPOINTS.AGENT.CHANNEL_FOR_SIP}?channelName=${channelName}`
+    );
+    if (response.data.tokenData) {
+      return response.data.tokenData;
+    }
+    throw new Error('Failed to get channel info for SIP');
+  }
+
   async joinChannel(channelInfo: AgoraChannelResponse): Promise<void> {
     await this.client.join(
       channelInfo.appId,
@@ -111,6 +146,10 @@ class AgoraRTCService {
       channelInfo.token,
       channelInfo.uid
     );
+
+    if (this.isSIPAgent) {
+      return
+    }
 
     this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     await this.client.publish([this.localAudioTrack]);
@@ -145,6 +184,11 @@ class AgoraRTCService {
   toggleAudio(enabled: boolean): void {
     if (this.localAudioTrack) {
       this.localAudioTrack.setEnabled(enabled);
+    } else {
+      (async () => {
+        this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await this.client.publish([this.localAudioTrack]);
+      })();
     }
   }
 }

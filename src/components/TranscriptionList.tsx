@@ -6,9 +6,10 @@ import { Button } from './ui/button';
 interface TranscriptionListProps {
   transcripts: IMessage[];
   isVisible: boolean;
+  isSIPAgent?: boolean;
 }
 
-export const TranscriptionList: React.FC<TranscriptionListProps> = ({ transcripts, isVisible }) => {
+export const TranscriptionList: React.FC<TranscriptionListProps> = ({ transcripts, isVisible, isSIPAgent = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export const TranscriptionList: React.FC<TranscriptionListProps> = ({ transcript
         </div>
       </div>
       <CardContent className="p-0">
-        <div 
+        <div
           ref={containerRef}
           className="border rounded-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-[78vh] overflow-y-auto"
         >
@@ -59,23 +60,23 @@ export const TranscriptionList: React.FC<TranscriptionListProps> = ({ transcript
               transcripts.map((transcript, index) => (
                 <Card key={index} className="shadow-sm">
                   <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium">
-                        {transcript.speaker === 'user' ? 'U' : 'A'}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium mb-1">
-                        {transcript.speaker === 'user' ? 'You' : 'Agent'}
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-medium">
+                          {transcript.speaker === 'user' ? (isSIPAgent ? 'C' : 'U') : 'A'}
+                        </span>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {transcript.transcription}
+                      <div className="flex-1">
+                        <div className="text-sm font-medium mb-1">
+                          {transcript.speaker === 'user' ? (isSIPAgent ? 'Customer' : 'You') : 'Agent'}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {transcript.transcription}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               ))
             ) : (
               <div className="flex items-center justify-center h-full">

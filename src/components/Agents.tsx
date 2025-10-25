@@ -1,7 +1,7 @@
 import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AgentTile, AgentType } from '../types/agent.types';
+import { AgentTile, AgentType, Layout } from '../types/agent.types';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
@@ -84,8 +84,16 @@ const AgentsList: React.FC = () => {
     setAgents(filteredAgents);
   }, [allAgents, searchQuery]);
 
-  const handleAgentClick = (agentId: string) => {
-    navigate(`/agent/${agentId}`);
+  const handleAgentClick = (agentId: string, agent: AgentTile) => {
+    if (agent.layout === Layout.SIP_CALL_INBOUND || agent.layout === Layout.SIP_CALL_OUTBOUND) {
+      if (agent.layout === Layout.SIP_CALL_INBOUND) {
+        navigate(`/sip-agent-inbound/${agentId}`);
+      } else {
+        navigate(`/sip-agent-outbound/${agentId}`);
+      }
+    } else {
+      navigate(`/agent/${agentId}`);
+    }
   };
 
   const clearSearch = () => {
@@ -199,7 +207,7 @@ const AgentsList: React.FC = () => {
               <Card 
                 key={agent.id}
                 className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => handleAgentClick(agent.id)}
+                onClick={() => handleAgentClick(agent.id, agent)}
               >
                 <CardHeader>
                   <CardTitle>{agent.title}</CardTitle>

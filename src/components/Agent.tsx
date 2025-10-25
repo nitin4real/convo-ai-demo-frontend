@@ -412,7 +412,7 @@ const Agent: React.FC = () => {
     isMuted={isMuted}
   />
 
-  if (agentDetails?.layout === Layout.SIP_CALL) {
+  if (agentDetails?.layout === Layout.SIP_CALL_INBOUND) {
     return <div className="min-h-screen bg-background">
       <Header feedbackDialogRef={feedbackDialogRef} />
       <main className="container mx-auto p-4 w-full h-[90vh] flex flex-col lg:flex-row gap-6">

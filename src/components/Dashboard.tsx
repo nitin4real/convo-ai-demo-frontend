@@ -1,7 +1,7 @@
 import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AgentTile, AgentType } from '../types/agent.types';
+import { AgentTile, AgentType, Layout } from '../types/agent.types';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
@@ -63,8 +63,16 @@ const Dashboard: React.FC = () => {
     setSelectedType(typeId);
   };
 
-  const handleAgentClick = (agentId: string) => {
-    navigate(`/agent/${agentId}`);
+  const handleAgentClick = (agentId: string, agent: AgentTile) => {
+    if (agent.layout === Layout.SIP_CALL_INBOUND || agent.layout === Layout.SIP_CALL_OUTBOUND) {
+      if (agent.layout === Layout.SIP_CALL_INBOUND) {
+        navigate(`/sip-agent-inbound/${agentId}`);
+      } else {
+        navigate(`/sip-agent-outbound/${agentId}`);
+      }
+    } else {
+      navigate(`/agent/${agentId}`);
+    }
   };
 
   if (loading && !selectedType) {

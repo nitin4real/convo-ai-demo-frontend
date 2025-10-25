@@ -16,7 +16,9 @@ export const API_CONFIG = {
       AGENT_TYPES: '/api/agent/agent-types',
       AGENTS_BY_TYPE: '/api/agent/agents/:type',
       AGENT_DETAILS: '/api/agent/:agentId',
-      START_SIP_CALL: '/api/agent/start-sip-call'
+      START_SIP_CALL: '/api/agent/start-sip-call',
+      GET_BUFFER: '/api/webhook/buffer-logs',
+      CHANNEL_FOR_SIP: '/api/agent/channel-for-sip'
     },
     FEEDBACK: '/api/feedback'
   }
