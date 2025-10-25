@@ -550,7 +550,7 @@ const SIP_Agent: React.FC = () => {
                       </p>
                     )}
                     {outboundState === OUTBOUND_STATES.TRANSFERRED && (
-                      <p className="text-lg text-blue-600">
+                      <p className="text-lg text-primary">
                         🔄 Call Transferred to Human Agent
                       </p>
                     )}
