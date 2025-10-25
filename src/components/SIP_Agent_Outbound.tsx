@@ -12,11 +12,9 @@ import { AgentTile, IMessage } from '../types/agent.types';
 import { MainCardHeader } from './MainCardHeader';
 import {  FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
-import { PlatformUsageDialogRef } from './PlatformUsageDialog';
 import { Card, CardContent} from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
-import { IProperties } from './CustomAgent/CustomAgent';
 import { SipOutboundControls } from './SipOutboundControls';
 
 
