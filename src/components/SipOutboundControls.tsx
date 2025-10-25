@@ -24,6 +24,7 @@ interface ISipOutboundControlsProps {
     isMutedRemoteUsers: boolean;
     muteRemoteUsers: () => void;
     unmuteRemoteUsers: () => void;
+    handleResetCall: () => void;
 }
 
 export const SipOutboundControls = (props: ISipOutboundControlsProps) => {
@@ -40,7 +41,20 @@ export const SipOutboundControls = (props: ISipOutboundControlsProps) => {
         unmuteRemoteUsers,
         isMuted,
         isMutedRemoteUsers,
-        muteRemoteUsers } = props;
+        muteRemoteUsers,
+        handleResetCall } = props;
+
+    if (outboundState === OUTBOUND_STATES.DISCONNECTED || outboundState === OUTBOUND_STATES.ERROR) {
+        return <div className=''>
+            <div className="flex flex-col items-center gap-6 p-4">
+                <div className="flex flex-col items-center gap-4">
+                    <Button onClick={handleResetCall} variant="destructive" size="lg" className="min-w-[200px]">
+                        Reset Call
+                    </Button>
+                </div>
+            </div>
+        </div>
+    }
     return <div className=''>
         <div className="flex flex-col items-center gap-6 p-4">
             <div className="flex flex-col items-center gap-4">

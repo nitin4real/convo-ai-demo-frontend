@@ -331,6 +331,12 @@ const SIP_Agent: React.FC = () => {
     setIsMutedRemoteUsers(false);
   };
 
+  const handleResetCall = () => {
+    // refresh page
+    window.location.reload();
+    toast.success('Call reset successful');
+  };
+
   if (showTranscriptions) {
     grid = 'grid grid-cols-2 gap-4 w-[100%]';
     mainClass = 'max-w-[80%] ';
@@ -339,6 +345,7 @@ const SIP_Agent: React.FC = () => {
   const sipOutboundControls = () => <SipOutboundControls
     isJoined={isJoined}
     outboundState={outboundState}
+    handleResetCall={handleResetCall}
     channelInfo={channelInfo}
     agentDetails={agentDetails}
     isMutedRemoteUsers={isMutedRemoteUsers}
