@@ -24,6 +24,7 @@ export enum INBOUND_STATES {
   CONNECTED = 'CONNECTED',
   DISCONNECTED = 'DISCONNECTED',
   ERROR = 'ERROR',
+  TRANSFERRED = 'TRANSFERRED',
 }
 
 export enum OUTBOUND_STATES {
@@ -100,6 +101,9 @@ const SIP_Agent: React.FC = () => {
       if(latestEvent?.event === 'ringing'){
         setCallerId(latestEvent?.from);
         setInboundState(INBOUND_STATES.RINGING);
+      } else if (latestEvent?.event === 'transfer_call') {
+        setInboundState(INBOUND_STATES.TRANSFERRED);
+        toast.success('Call transferred to human agent');
       } else if (latestEvent?.event === 'agora_bridge_start' || latestEvent?.event === 'call_initiated'){
         // fetch the channel details and connect right away and turn isJoined to true
         setInboundState(INBOUND_STATES.CONNECTED);
@@ -530,6 +534,11 @@ const SIP_Agent: React.FC = () => {
                     {inboundState === INBOUND_STATES.ERROR && (
                       <p className="text-lg text-red-600">
                         ❌ Error occurred while processing the call
+                      </p>
+                    )}
+                    {inboundState === INBOUND_STATES.TRANSFERRED && (
+                      <p className="text-lg text-blue-600">
+                        🔄 Call Transferred to Human Agent
                       </p>
                     )}
                   </div>

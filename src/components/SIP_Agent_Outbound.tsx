@@ -33,6 +33,7 @@ export enum OUTBOUND_STATES {
   DISCONNECTED = 'DISCONNECTED',
   NOT_ANSWERED = 'NOT_ANSWERED',
   ERROR = 'ERROR',
+  TRANSFERRED = 'TRANSFERRED',
 }
 
 
@@ -251,6 +252,9 @@ const SIP_Agent: React.FC = () => {
         setOutboundState(OUTBOUND_STATES.DISCONNECTED);
         setIsJoined(false);
         toast.success('Call ended');
+      } else if (latestEvent?.event === 'transfer_call') {
+        setOutboundState(OUTBOUND_STATES.TRANSFERRED);
+        toast.success('Call transferred to human agent');
       } else {
         console.log('Buffer:', latestEvent, outboundState);
       }
@@ -532,6 +536,11 @@ const SIP_Agent: React.FC = () => {
                     {outboundState === OUTBOUND_STATES.DISCONNECTED && (
                       <p className="text-lg text-red-600">
                         ❌ Call Ended
+                      </p>
+                    )}
+                    {outboundState === OUTBOUND_STATES.TRANSFERRED && (
+                      <p className="text-lg text-blue-600">
+                        🔄 Call Transferred to Human Agent
                       </p>
                     )}
                   </div>
