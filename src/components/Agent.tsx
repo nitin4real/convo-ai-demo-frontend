@@ -530,24 +530,23 @@ const Agent: React.FC = () => {
       <div className="min-h-screen bg-background">
         <Header feedbackDialogRef={feedbackDialogRef} />
         <main className={`container mx-auto p-4 w-full h-[90vh] flex flex-row`}>
-          <Card className="shadow-lg h-full w-full">
+          <Card className="shadow-lg h-full w-full flex flex-col relative">
             <CardHeader className="border-b">
               <CardTitle className="text-2xl">Avatar</CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-center items-center h-full overflow-auto">
+            <CardContent className="flex-1 flex justify-center items-center relative overflow-auto">
               {
-                isAgentStarted &&
-                  isJoined ?
+                isAgentStarted && isJoined ?
                   <video ref={videoRef} autoPlay className="w-full h-full object-cover rounded-lg" />
                   :
                   <div className="flex justify-center items-center h-full">
                     <p className="text-muted-foreground">Conversation not started yet...</p>
                   </div>
               }
+              <div className="absolute bottom-4 left-4 z-10">
+                {agentControls()}
+              </div>
             </CardContent>
-            <div className='absolute bottom-20 left-60'>
-              {agentControls()}
-            </div>
           </Card>
           {showTranscriptions && (
             <div className="ml-5 w-[30vw]">
