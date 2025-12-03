@@ -536,7 +536,7 @@ const Agent: React.FC = () => {
             </CardHeader>
             <CardContent className="flex-1 flex justify-center items-center relative overflow-auto">
               {
-                isAgentStarted && isJoined ?
+                isJoined ?
                   <video ref={videoRef} autoPlay className="w-full h-full object-cover rounded-lg" />
                   :
                   <div className="flex justify-center items-center h-full">
@@ -612,8 +612,7 @@ const Agent: React.FC = () => {
                   </CardHeader>
                   <CardContent className="pt-4 flex justify-center items-center h-full">
                     {
-                      isAgentStarted &&
-                        isJoined ?
+                      isJoined ?
                         <video ref={videoRef} autoPlay className="w-[80%] rounded-lg" />
                         :
                         <div className="flex justify-center items-center h-full">
