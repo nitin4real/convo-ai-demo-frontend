@@ -543,7 +543,7 @@ const Agent: React.FC = () => {
                     <p className="text-muted-foreground">Conversation not started yet...</p>
                   </div>
               }
-              <div className="absolute bottom-4 left-4 z-10">
+              <div className="absolute inset-x-0 bottom-4 z-10 flex justify-center">
                 {agentControls()}
               </div>
             </CardContent>
