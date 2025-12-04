@@ -1,4 +1,4 @@
-import { Mic, MicOff, Captions, CaptionsOff, BarChart3 } from 'lucide-react';
+import { Mic, MicOff, Captions, CaptionsOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { toast } from 'sonner';
@@ -37,8 +37,8 @@ export const AgentControls = (props: IAgentControlProps) => {
         setCustomAgentProperties,
         showTranscriptions,
         setShowTranscriptions,
-        showMetrics,
-        setShowMetrics,
+        // showMetrics,
+        // setShowMetrics,
         joinChannel,
         startAgent,
         handleEndConversation,
