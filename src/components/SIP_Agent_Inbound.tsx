@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraRTCService, RemoteUser } from '../services/agora.rtc.service';
-import { AgentTile, IMessage } from '../types/agent.types';
+import { AgentTile, IMessage, IMetricMessage } from '../types/agent.types';
 
 import { MainCardHeader } from './MainCardHeader';
 import {  FeedbackDialogRef } from './FeedbackDialog';
@@ -16,6 +16,7 @@ import { Card, CardContent} from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
 import { SipInboundControls } from './SipInboundControls';
+import { MetricList } from './MetricList';
 
 
 export enum INBOUND_STATES {
@@ -59,6 +60,8 @@ const SIP_Agent: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
+  const [metrics, setMetrics] = useState<IMetricMessage[]>([]);
+  const [showMetrics, setShowMetrics] = useState(false);
   const lastEventIdRef = useRef<string | null>(null);
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -155,6 +158,9 @@ const SIP_Agent: React.FC = () => {
         console.log('Loggin Service', 'User left:', uid);
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
       },
+      onMetric: (metric) => {
+        setMetrics(prev => [...prev, metric]);
+      },
       onMessage: (message) => {
         setTranscripts(prev => {
           if (prev.length > 0) {
@@ -222,6 +228,7 @@ const SIP_Agent: React.FC = () => {
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
+    setMetrics([]);
     // stopHeartbeat();
     convoAgentId.current = null;
     // refresh page
@@ -358,6 +365,8 @@ const SIP_Agent: React.FC = () => {
     setSelectedLanguage={setSelectedLanguage}
     showTranscriptions={showTranscriptions}
     setShowTranscriptions={setShowTranscriptions}
+    showMetrics={showMetrics}
+    setShowMetrics={setShowMetrics}
     joinChannel={joinChannel}
     handleEndConversation={handleEndConversation}
     toggleMute={toggleMute}
@@ -561,6 +570,14 @@ const SIP_Agent: React.FC = () => {
           )}
         </div>
       </main>
+      {showMetrics && (
+        <div className="fixed bottom-4 left-4 w-[350px] h-[450px] z-50">
+          <MetricList
+            metrics={metrics}
+            isVisible={showMetrics}
+          />
+        </div>
+      )}
     </div>
   );
 };

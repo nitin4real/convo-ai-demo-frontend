@@ -1,4 +1,4 @@
-import { Mic, MicOff, Captions, CaptionsOff } from 'lucide-react';
+import { Mic, MicOff, Captions, CaptionsOff, BarChart3 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { toast } from 'sonner';
@@ -17,6 +17,8 @@ interface IAgentControlProps {
     setCustomAgentProperties: (value: IProperties | null) => void;
     showTranscriptions: boolean;
     setShowTranscriptions: (value: boolean) => void;
+    showMetrics: boolean;
+    setShowMetrics: (value: boolean) => void;
     joinChannel: () => Promise<void>;
     startAgent: () => Promise<void>;
     handleEndConversation: () => Promise<void>;
@@ -35,6 +37,8 @@ export const AgentControls = (props: IAgentControlProps) => {
         setCustomAgentProperties,
         showTranscriptions,
         setShowTranscriptions,
+        showMetrics,
+        setShowMetrics,
         joinChannel,
         startAgent,
         handleEndConversation,
@@ -100,6 +104,15 @@ export const AgentControls = (props: IAgentControlProps) => {
                             >
                                 {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                             </Button>
+                            {/* <Button
+                                title="Metrics"
+                                onClick={() => setShowMetrics(!showMetrics)}
+                                variant={showMetrics ? "destructive" : "outline"}
+                                size="lg"
+                                className="w-10 h-10"
+                            >
+                                {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
+                            </Button> */}
                         </div>
                     </>
                 )}
@@ -122,6 +135,15 @@ export const AgentControls = (props: IAgentControlProps) => {
                         >
                             {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                         </Button>
+                        {/* <Button
+                            title="Metrics"
+                            onClick={() => setShowMetrics(!showMetrics)}
+                            variant={showMetrics ? "destructive" : "outline"}
+                            size="lg"
+                            className="w-10 h-10"
+                        >
+                            {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
+                        </Button> */}
                         {isJoined && <Button
                             onClick={toggleMute}
                             variant={isMuted ? "destructive" : "outline"}

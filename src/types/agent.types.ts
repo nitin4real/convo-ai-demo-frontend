@@ -15,7 +15,7 @@ export interface StartAgentRequest {
   languageCode: string;
 }
 
-export interface StopAgentRequest {}
+export interface StopAgentRequest { }
 
 export interface AgentType {
   id: string;
@@ -44,6 +44,12 @@ export interface IMessage {
   turn_id: number;
 }
 
+export interface IMetricMessage {
+  metric_name: string
+  module: string
+  turn_id: number
+  latency_ms: number
+}
 
 export const enum Layout {
   DEFAULT = 'DEFAULT',

@@ -24,6 +24,8 @@ import { MetaDataView } from './MetaDataView';
 import { Layout } from '@/types/agent.types';
 import CustomAgent, { IProperties } from './CustomAgent/CustomAgent';
 import { AgentControls } from './AgentControls';
+import { MetricList } from './MetricList';
+import { IMetricMessage } from '../types/agent.types';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -48,6 +50,8 @@ const Agent: React.FC = () => {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
+  const [metrics, setMetrics] = useState<IMetricMessage[]>([]);
+  const [showMetrics, setShowMetrics] = useState(false);
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
   const videoRef = useRef<any>(null);
   // const selfVideoRef = useRef<any>(null);
@@ -172,6 +176,9 @@ const Agent: React.FC = () => {
         console.log('Loggin Service', 'User left:', uid);
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
       },
+      onMetric: (metric) => {
+        setMetrics(prev => [...prev, metric]);
+      },
       onMessage: (message) => {
         setTranscripts(prev => {
           if (prev.length > 0) {
@@ -286,6 +293,7 @@ const Agent: React.FC = () => {
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
+    setMetrics([]);
     stopHeartbeat();
     convoAgentId.current = null;
   };
@@ -405,6 +413,8 @@ const Agent: React.FC = () => {
     setCustomAgentProperties={setCustomAgentProperties}
     showTranscriptions={showTranscriptions}
     setShowTranscriptions={setShowTranscriptions}
+    showMetrics={showMetrics}
+    setShowMetrics={setShowMetrics}
     joinChannel={joinChannel}
     startAgent={startAgent}
     handleEndConversation={handleEndConversation}
@@ -646,6 +656,14 @@ const Agent: React.FC = () => {
         ref={platformUsageDialogRef}
         feedbackDialogRef={feedbackDialogRef}
       />
+      {showMetrics && (
+        <div className="fixed bottom-4 left-4 w-[350px] h-[450px] z-50">
+          <MetricList
+            metrics={metrics}
+            isVisible={showMetrics}
+          />
+        </div>
+      )}
     </div>
   );
 };

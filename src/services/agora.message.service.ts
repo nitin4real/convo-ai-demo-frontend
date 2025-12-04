@@ -1,4 +1,4 @@
-import { IMessage } from '@/types/agent.types'
+import { IMessage, IMetricMessage } from '@/types/agent.types'
 import { SPEAKER_MAP } from '../constant/constants'
 export type TDataChunk = {
     message_id: string
@@ -59,6 +59,7 @@ export enum ETranscriptionObjectType {
     USER_TRANSCRIPTION = 'user.transcription',
     AGENT_TRANSCRIPTION = 'assistant.transcription',
     MSG_INTERRUPTED = 'message.interrupt',
+    METRIC = 'message.metrics',
 }
 
 /**
@@ -103,6 +104,14 @@ export interface IAgentTranscription extends ITranscriptionBase {
     turn_status: EMessageStatus
 }
 
+export interface IAgentMetric {
+    object: ETranscriptionObjectType.METRIC // "message.metrics"
+    metric_name: string
+    turn_id: number
+    module: string
+    latency_ms: number
+}
+
 export interface IMessageInterrupt {
     object: ETranscriptionObjectType.MSG_INTERRUPTED // "message.interrupt"
     message_id: string
@@ -120,11 +129,12 @@ export class MessageEngine {
     private _messageCache: Record<string, TDataChunk[]> = {}
     private _messageCacheTimeout: number = DEFAULT_MESSAGE_CACHE_TIMEOUT
 
-    public handleStreamMessage(stream: Uint8Array): IMessage | undefined {
+    public handleStreamMessage(stream: Uint8Array) {
         const chunk = this.streamMessage2Chunk(stream)
         let transcript: IMessage | undefined = undefined
+        let metric: IMetricMessage | undefined = undefined
         this.handleChunk<
-            IUserTranscription | IAgentTranscription
+            IUserTranscription | IAgentTranscription | IAgentMetric
         >(chunk, (message) => {
             if (message.object === ETranscriptionObjectType.USER_TRANSCRIPTION) {
                 transcript = {
@@ -138,9 +148,17 @@ export class MessageEngine {
                     transcription: message?.text,
                     turn_id: message?.turn_id,
                 }
+            } else if (message.object === ETranscriptionObjectType.METRIC) {
+                const metricData: IMetricMessage = {
+                    metric_name: message.metric_name,
+                    module: message.module,
+                    turn_id: message.turn_id,
+                    latency_ms: message.latency_ms
+                }
+                metric  = metricData
             }
         })
-        return transcript
+        return { transcript, metric }
     }
 
     public streamMessage2Chunk(stream: Uint8Array) {
@@ -154,7 +172,8 @@ export class MessageEngine {
         | TDataChunkMessageV1
         | IUserTranscription
         | IAgentTranscription
-        | IMessageInterrupt,
+        | IMessageInterrupt
+        | IAgentMetric,
     >(chunk: string, callback?: (message: T) => void): void {
         try {
             // split chunk by '|'

@@ -9,7 +9,7 @@ import AgoraRTC, {
   UID
 } from 'agora-rtc-sdk-ng';
 import { messageEngine } from './agora.message.service';
-import { IMessage } from '../types/agent.types';
+import { IMessage, IMetricMessage } from '../types/agent.types';
 
 export interface AgoraChannelResponse {
   appId: string;
@@ -31,6 +31,7 @@ export interface AgoraServiceCallbacks {
   onUserPublished?: (user: RemoteUser, mediaType: 'audio' | 'video') => void;
   onUserUnpublished?: (user: RemoteUser) => void;
   onMessage?: (message: IMessage) => void;
+  onMetric?: (metric: IMetricMessage) => void;
 }
 
 class AgoraRTCService {
@@ -90,9 +91,11 @@ class AgoraRTCService {
     });
 
     this.client.on('stream-message', (_: UID, payload: Uint8Array) => {
-      const messages = messageEngine.handleStreamMessage(payload)
-      if (messages) {
-        this.callbacks.onMessage?.(messages)
+      const { transcript, metric } = messageEngine.handleStreamMessage(payload)
+      if (transcript) {
+        this.callbacks.onMessage?.(transcript)
+      } else if (metric){
+        this.callbacks.onMetric?.(metric)
       }
     })
 

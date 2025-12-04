@@ -1,4 +1,4 @@
-import { Mic, MicOff, Captions, CaptionsOff } from 'lucide-react';
+import { Mic, MicOff, Captions, CaptionsOff, BarChart3 } from 'lucide-react';
 import { Button } from './ui/button';
 import { AgoraChannelResponse } from '@/services/agora.rtc.service';
 import { AgentTile } from '@/types/agent.types';
@@ -13,6 +13,8 @@ interface ISipInboundControlsProps {
     setSelectedLanguage: (value: string) => void;
     showTranscriptions: boolean;
     setShowTranscriptions: (value: boolean) => void;
+    showMetrics: boolean;
+    setShowMetrics: (value: boolean) => void;
     joinChannel: () => Promise<void>;
     handleEndConversation: () => Promise<void>;
     toggleMute: () => void;
@@ -29,6 +31,8 @@ export const SipInboundControls = (props: ISipInboundControlsProps) => {
         handleResetCall,
         showTranscriptions,
         setShowTranscriptions,
+        showMetrics,
+        setShowMetrics,
         handleEndConversation,
         toggleMute,
         unmuteRemoteUsers,
@@ -82,6 +86,15 @@ export const SipInboundControls = (props: ISipInboundControlsProps) => {
                             className="w-10 h-10"
                         >
                             {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
+                        </Button>
+                        <Button
+                            title="Metrics"
+                            onClick={() => setShowMetrics(!showMetrics)}
+                            variant={showMetrics ? "destructive" : "outline"}
+                            size="lg"
+                            className="w-10 h-10"
+                        >
+                            <BarChart3 className="h-6 w-6" />
                         </Button>
                         {isJoined && <Button
                             onClick={toggleMute}
