@@ -8,16 +8,14 @@ import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
 import { AgoraChannelResponse, agoraRTCService, RemoteUser } from '../services/agora.rtc.service';
 import { AgentTile, IMessage, StartAgentRequest, StartAgentResponse } from '../types/agent.types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 import { MainCardHeader } from './MainCardHeader';
 import { FeedbackDialog, FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { PlatformUsageDialog, PlatformUsageDialogRef } from './PlatformUsageDialog';
-import { Loader2 } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
 import { MetaDataView } from './MetaDataView';
@@ -55,7 +53,6 @@ const Agent: React.FC = () => {
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
   const videoRef = useRef<any>(null);
   // const selfVideoRef = useRef<any>(null);
-  const [isStartingOutbound, setIsStartingOutbound] = useState(false);
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -355,25 +352,11 @@ const Agent: React.FC = () => {
   let grid = '';
   let mainClass = 'max-w-4xl';
 
-  const startOutboundCall = async (phoneNumber: string) => {
-    setIsStartingOutbound(true);
-    try {
-      const request = {
-        phoneNumber: phoneNumber,
-        agentId: agentId,
-        language: selectedLanguage || ""
-      };
-      const response = await axios.post<StartAgentResponse>(
-        `${API_CONFIG.ENDPOINTS.AGENT.START_SIP_CALL}`,
-        request
-      );
-      console.log('Loggin Service', 'Outbound call started:', response.data);
-      toast.success('Outbound call started');
-    }
-    catch (error: any) {
-      console.error('Failed to start outbound call:', error);
-    } finally {
-      setIsStartingOutbound(false);
+
+  const handleCopyAgentId = () => {
+    if (convoAgentId.current) {
+      navigator.clipboard.writeText(convoAgentId.current);
+      toast.success('ConvoAI Agent ID copied to clipboard');
     }
   };
 
@@ -413,6 +396,7 @@ const Agent: React.FC = () => {
     setCustomAgentProperties={setCustomAgentProperties}
     showTranscriptions={showTranscriptions}
     setShowTranscriptions={setShowTranscriptions}
+    enableMetric={agentDetails?.showMetric || false}
     showMetrics={showMetrics}
     setShowMetrics={setShowMetrics}
     joinChannel={joinChannel}
@@ -422,118 +406,6 @@ const Agent: React.FC = () => {
     isMuted={isMuted}
   />
 
-  if (agentDetails?.layout === Layout.SIP_CALL_INBOUND) {
-    return <div className="min-h-screen bg-background">
-      <Header feedbackDialogRef={feedbackDialogRef} />
-      <main className="container mx-auto p-4 w-full h-[90vh] flex flex-col lg:flex-row gap-6">
-        <Card className="shadow-lg h-full flex-1">
-          <CardHeader className="border-b">
-            <CardTitle className="text-2xl">Inbound Calls</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4 text-sm leading-relaxed">
-              <div className="space-y-3">
-                <p className="font-medium text-foreground">To make an inbound call:</p>
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="font-semibold text-primary mb-2">Dial: 02247790159</p>
-                  <p className="text-muted-foreground mb-2">You'll be prompted to enter a PIN:</p>
-                  <ul className="space-y-1 ml-4">
-                    <li>• Enter <span className="font-mono bg-primary/10 px-2 py-1 rounded">123#</span> (For English)</li>
-                    <li>• Enter <span className="font-mono bg-primary/10 px-2 py-1 rounded">321#</span> (For Hindi)</li>
-                  </ul>
-                </div>
-                <p className="text-muted-foreground">
-                  This will connect you to the Agora Conversational AI Agent.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <p className="font-medium text-foreground">How it works:</p>
-                <div className="space-y-2 text-muted-foreground">
-                  <p>• The AI agent will try to resolve the wifi issue</p>
-                  <p>• If not resolved, it will transfer your call to a human agent</p>
-                  <p>• You can intervene at any time to initiate a transfer to a human</p>
-                  <p>• Before transferring, the agent will seek your confirmation</p>
-                  <p>• The call will be routed to Human Agent</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg h-full flex-1">
-          <CardHeader className="border-b">
-            <CardTitle className="text-2xl">Outbound Calls</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="phoneNumber" className="block text-sm font-bold text-foreground mb-2">
-                    Phone Number
-                  </label>
-                  <Input
-                    type="tel"
-                    id="phoneNumber"
-                    placeholder="Enter 11-digit number with 0 prefix"
-                    className="max-w-sm"
-                  />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Example: 03892372789
-                  </p>
-                  {agentDetails?.languages && (
-                    <Select
-                      value={selectedLanguage || ""}
-                      onValueChange={(value) => setSelectedLanguage(value)}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select Language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agentDetails.languages.map((lang) => (
-                          <SelectItem key={lang.isoCode} value={lang.isoCode}>
-                            {lang.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => {
-                    const phoneNumber = (document.getElementById('phoneNumber') as HTMLInputElement).value || '';
-                    if (phoneNumber.length === 11 && phoneNumber.startsWith('0') && !isNaN(Number(phoneNumber))) {
-                      startOutboundCall(phoneNumber);
-                    } else {
-                      toast.error('Please enter a valid 11-digit phone number with 0 prefix');
-                    }
-                  }}
-                  className="max-w-[200px]"
-                  disabled={isStartingOutbound}
-                >
-                  {isStartingOutbound ? (
-                    <>
-                      <Loader2 className="animate-spin" />
-                      Starting...
-                    </>
-                  ) : (
-                    'Start Outbound Call'
-                  )}
-                </Button>
-              </div>
-
-              <div className="bg-muted p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  This will initiate the call to the number and connect to the Agora Conversational AI Agent. (English Speaking Agent By default). <br />
-                  You can converse with the agent or request a transfer to a human agent at any point of the conversation. Upon your confirmation, the agent will exit the call and transfer it to Human Agent.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  }
 
   if (agentDetails?.layout === Layout.AVATAR_LANDSCAPE_TRANSCRIPT) {
     return (
@@ -588,7 +460,20 @@ const Agent: React.FC = () => {
                   {agentDetails && (
                     <div className="text-center space-y-4 max-w-2xl">
                       <div>
-                        <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <h2 className="text-2xl font-semibold">{agentDetails.name}</h2>
+                          {convoAgentId.current && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              onClick={handleCopyAgentId}
+                              title="Copy ConvoAI Agent ID"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                         <p className="text-muted-foreground">{agentDetails.description}</p>
                       </div>
                       {agentDetails.features && agentDetails.features.length > 0 && (

@@ -34,6 +34,7 @@ export interface AgentTile {
   title: string;
   description: string;
   features: string[];
+  showMetric: boolean;
   languages: AgentLanguage[];
   layout: Layout;
 }

@@ -1,4 +1,5 @@
-import { Mic, MicOff, Captions, CaptionsOff, BarChart3 } from 'lucide-react';
+import { Mic, MicOff, Captions, CaptionsOff, BarChart3, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ interface IAgentControlProps {
     handleEndConversation: () => Promise<void>;
     toggleMute: () => void;
     isMuted: boolean;
+    enableMetric: boolean;
 }
 
 export const AgentControls = (props: IAgentControlProps) => {
@@ -43,7 +45,10 @@ export const AgentControls = (props: IAgentControlProps) => {
         startAgent,
         handleEndConversation,
         toggleMute,
-        isMuted } = props;
+        isMuted,
+        enableMetric } = props;
+    const [isLoading, setIsLoading] = useState(false);
+
     return <div className=''>
         <div className="flex flex-col items-center gap-6 p-4">
             <div className="flex flex-col items-center gap-4">
@@ -86,14 +91,29 @@ export const AgentControls = (props: IAgentControlProps) => {
                                         toast.error('Please select a language');
                                         return;
                                     }
-                                    await joinChannel();
-                                    await startAgent();
+                                    try {
+                                        setIsLoading(true);
+                                        await joinChannel();
+                                        await startAgent();
+                                    } catch (error) {
+                                        console.error(error);
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
                                 }}
+                                disabled={isLoading}
                                 variant="default"
                                 size="lg"
                                 className="min-w-[200px]"
                             >
-                                Start Conversation
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Starting...
+                                    </>
+                                ) : (
+                                    "Start Conversation"
+                                )}
                             </Button>
                             <Button
                                 title="Transcriptions"
@@ -104,7 +124,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                             >
                                 {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                             </Button>
-                            <Button
+                            {enableMetric && <Button
                                 title="Metrics"
                                 onClick={() => setShowMetrics(!showMetrics)}
                                 variant={showMetrics ? "destructive" : "outline"}
@@ -112,7 +132,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                                 className="w-10 h-10"
                             >
                                 {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
-                            </Button>
+                            </Button>}
                         </div>
                     </>
                 )}
@@ -135,7 +155,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                         >
                             {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                         </Button>
-                        <Button
+                        {enableMetric && <Button
                             title="Metrics"
                             onClick={() => setShowMetrics(!showMetrics)}
                             variant={showMetrics ? "destructive" : "outline"}
@@ -143,7 +163,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                             className="w-10 h-10"
                         >
                             {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
-                        </Button>
+                        </Button>}
                         {isJoined && <Button
                             onClick={toggleMute}
                             variant={isMuted ? "destructive" : "outline"}
