@@ -149,13 +149,16 @@ export class MessageEngine {
                     turn_id: message?.turn_id,
                 }
             } else if (message.object === ETranscriptionObjectType.METRIC) {
+                if (message.module === 'llm' && message.metric_name === 'ttfb') {
+                    return {}
+                }
                 const metricData: IMetricMessage = {
                     metric_name: message.metric_name,
                     module: message.module,
                     turn_id: message.turn_id,
                     latency_ms: message.latency_ms
                 }
-                metric  = metricData
+                metric = metricData
             }
         })
         return { transcript, metric }

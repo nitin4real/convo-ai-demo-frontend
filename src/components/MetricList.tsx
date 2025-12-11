@@ -34,7 +34,7 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
         turn_id: metric.turn_id,
       };
     }
-    
+
     const module = metric.module.toLowerCase();
     if (module === 'asr' || module === 'llm' || module === 'tts') {
       if (!acc[metric.turn_id][module]) {
@@ -86,7 +86,7 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
                         <>
                           {asrMetricNames.map((metricName) => (
                             <th key={`asr-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              ASR ({metricName})
+                              ASR
                             </th>
                           ))}
                         </>
@@ -95,7 +95,7 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
                         <>
                           {llmMetricNames.map((metricName) => (
                             <th key={`llm-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              LLM ({metricName})
+                              LLM
                             </th>
                           ))}
                         </>
@@ -104,11 +104,12 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
                         <>
                           {ttsMetricNames.map((metricName) => (
                             <th key={`tts-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              TTS ({metricName})
+                              TTS
                             </th>
                           ))}
                         </>
                       )}
+                      <th className="text-left px-2 py-1 text-xs font-bold w-16">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -117,25 +118,32 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
                         <td className="p-2 font-medium text-xs w-16">{turn.turn_id}</td>
                         {asrMetricNames.map((metricName) => (
                           <td key={`asr-${metricName}`} className="p-2 text-xs">
-                            {turn.asr?.[metricName] !== undefined 
-                              ? turn.asr[metricName].toFixed(0) 
+                            {turn.asr?.[metricName] !== undefined
+                              ? turn.asr[metricName].toFixed(0)
                               : '-'}
                           </td>
                         ))}
                         {llmMetricNames.map((metricName) => (
                           <td key={`llm-${metricName}`} className="p-2 text-xs">
-                            {turn.llm?.[metricName] !== undefined 
-                              ? turn.llm[metricName].toFixed(0) 
+                            {turn.llm?.[metricName] !== undefined
+                              ? turn.llm[metricName].toFixed(0)
                               : '-'}
                           </td>
                         ))}
                         {ttsMetricNames.map((metricName) => (
                           <td key={`tts-${metricName}`} className="p-2 text-xs">
-                            {turn.tts?.[metricName] !== undefined 
-                              ? turn.tts[metricName].toFixed(0) 
+                            {turn.tts?.[metricName] !== undefined
+                              ? turn.tts[metricName].toFixed(0)
                               : '-'}
                           </td>
                         ))}
+                        <td className="p-2 text-xs font-bold">
+                          {(
+                            (turn.asr ? Object.values(turn.asr).reduce((a, b) => a + b, 0) : 0) +
+                            (turn.llm ? Object.values(turn.llm).reduce((a, b) => a + b, 0) : 0) +
+                            (turn.tts ? Object.values(turn.tts).reduce((a, b) => a + b, 0) : 0)
+                          ).toFixed(0)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -94,7 +94,7 @@ class AgoraRTCService {
       const { transcript, metric } = messageEngine.handleStreamMessage(payload)
       if (transcript) {
         this.callbacks.onMessage?.(transcript)
-      } else if (metric){
+      } else if (metric) {
         this.callbacks.onMetric?.(metric)
       }
     })
