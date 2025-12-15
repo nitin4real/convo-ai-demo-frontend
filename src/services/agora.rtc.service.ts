@@ -10,7 +10,7 @@ import AgoraRTC, {
 } from 'agora-rtc-sdk-ng';
 import { messageEngine } from './agora.message.service';
 import { IMessage, IMetricMessage } from '../types/agent.types';
-
+import { AIDenoiserExtension } from 'agora-extension-ai-denoiser';
 export interface AgoraChannelResponse {
   appId: string;
   channelName: string;
@@ -41,10 +41,24 @@ class AgoraRTCService {
   private remoteUsers: Map<UID, RemoteUser> = new Map();
   private callbacks: AgoraServiceCallbacks = {};
   private isSIPAgent: boolean = false;
+  private denoiser: AIDenoiserExtension | null = null;
 
   constructor() {
     this.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    this.denoiser = new AIDenoiserExtension({ assetsPath: '/external' });
+    this.setupDenoiser()
     this.setupEventListeners();
+  }
+
+  private setupDenoiser() {
+    console.log("denoiser", this.denoiser)
+    if (this.denoiser && !this.denoiser.checkCompatibility()) {
+      console.error("Does not support AI Denoiser!");
+      this.denoiser = null
+    } else if (this.denoiser) {
+      AgoraRTC.registerExtensions([this.denoiser]);
+    }
+
   }
 
   private setupEventListeners() {
@@ -155,6 +169,17 @@ class AgoraRTCService {
     }
 
     this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    try {
+      if (this.denoiser) {
+        const processor = this.denoiser.createProcessor();
+        processor.enable(); // .disable 
+        this.localAudioTrack.pipe(processor).pipe(this.localAudioTrack.processorDestination);
+        await processor.enable();
+        console.log("AINS enabled success")
+      }
+    } catch (error) {
+      console.log("AINS enabled failed", error)
+    }
     await this.client.publish([this.localAudioTrack]);
 
     // only for avatar landscape transcript
