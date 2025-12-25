@@ -131,6 +131,32 @@ const SIP_Agent: React.FC = () => {
       } else {
         console.log('Buffer:', latestEvent, inboundState);
       }
+    } else if(response?.data?.agoraLCEvents?.length > 0) {
+      const latestEvent = response?.data?.agoraLCEvents[0];
+      console.log('Agora LC Event:', latestEvent);
+      if(latestEvent?.state === 'START') {
+        setInboundState(INBOUND_STATES.RINGING);
+        try {
+          if(isJoined) return;
+          const channelName = latestEvent?.channel;
+          const channelDetails = await agoraRTCService.getChannelInfoForSip(channelName);
+          setChannelInfo(channelDetails);
+          await joinChannel();
+          setIsJoined(true);
+        } catch (error) {
+          console.error('Failed to get channel info for SIP:', error);
+          setInboundState(INBOUND_STATES.ERROR);
+          toast.error('Failed to get channel info for SIP. Please try again later.');
+        }
+      } else if(latestEvent?.state === 'ANSWERED') {
+        setInboundState(INBOUND_STATES.CONNECTED);
+      } else if(latestEvent?.state === 'TRANSFERED') {
+        setInboundState(INBOUND_STATES.TRANSFERRED);
+      } else if(latestEvent?.state === 'HANGUP') {
+        setInboundState(INBOUND_STATES.DISCONNECTED);
+      } else {
+        console.log('Agora LC Event:', latestEvent, inboundState);
+      }
     }
     // console.log('Buffer:', response.data);
   };

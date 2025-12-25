@@ -10,9 +10,9 @@ import { AgoraChannelResponse, agoraRTCService, RemoteUser } from '../services/a
 import { AgentTile, IMessage, IMetricMessage } from '../types/agent.types';
 
 import { MainCardHeader } from './MainCardHeader';
-import {  FeedbackDialogRef } from './FeedbackDialog';
+import { FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
-import { Card, CardContent} from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
 import AgoraRTMService from '../services/agora.rtm.services';
 import { SipOutboundControls } from './SipOutboundControls';
@@ -240,7 +240,7 @@ const SIP_Agent: React.FC = () => {
       const latestEvent = response?.data?.bufferLogs[0];
       console.log('Buffer:', lastEventIdRef.current, latestEvent);
       if (latestEvent?.direction != 'outbound' && latestEvent?.event != 'transfer_call') return;
-      if(lastEventIdRef.current === latestEvent?.eventId) return;
+      if (lastEventIdRef.current === latestEvent?.eventId) return;
       lastEventIdRef.current = latestEvent?.eventId;
 
       if (latestEvent?.event === 'call_ringing') {
@@ -259,7 +259,7 @@ const SIP_Agent: React.FC = () => {
           setOutboundState(OUTBOUND_STATES.ERROR);
           toast.error('Failed to get channel info for SIP. Please try again later.');
         }
-      } else if (latestEvent?.event === 'agora_bridge_end' || latestEvent?.event === 'call_hangup'){
+      } else if (latestEvent?.event === 'agora_bridge_end' || latestEvent?.event === 'call_hangup') {
         setOutboundState(OUTBOUND_STATES.DISCONNECTED);
         setIsJoined(false);
         toast.success('Call ended');
@@ -269,9 +269,40 @@ const SIP_Agent: React.FC = () => {
       } else {
         console.log('Buffer:', latestEvent, outboundState);
       }
+    } else if (response?.data?.agoraLCEvents?.length > 0) {
+      const latestEvent = response?.data?.agoraLCEvents[0];
+      console.log('Agora LC Event:', latestEvent);
+      if (latestEvent?.state === 'START' || latestEvent?.state === 'CALLING') {
+        tryToJoinChannel(latestEvent?.channel);
+      } else if(latestEvent?.state === 'RINGING'){
+        tryToJoinChannel(latestEvent?.channel);
+        setOutboundState(OUTBOUND_STATES.RINGING);
+      }
+       else if (latestEvent?.state === 'ANSWERED') {
+        setOutboundState(OUTBOUND_STATES.CONNECTED);
+      } else if (latestEvent?.state === 'TRANSFERED') {
+        setOutboundState(OUTBOUND_STATES.TRANSFERRED);
+      } else if (latestEvent?.state === 'HANGUP') {
+        setOutboundState(OUTBOUND_STATES.DISCONNECTED);
+      } else {
+        console.log('Agora LC Event:', latestEvent, outboundState);
+      }
     }
-    // console.log('Buffer:', response.data);
   };
+  
+  const tryToJoinChannel = async (channelName: string) => {
+    try {
+      if (isJoined) return;
+      const channelDetails = await agoraRTCService.getChannelInfoForSip(channelName);
+      setChannelInfo(channelDetails);
+      await joinChannel();
+      setIsJoined(true);
+    } catch (error) {
+      console.error('Failed to get channel info for SIP:', error);
+      setOutboundState(OUTBOUND_STATES.ERROR);
+      toast.error('Failed to get channel info for SIP. Please try again later.');
+    }
+  }
 
   const startOutboundCall = async (phoneNumber: string) => {
     // setIsStartingOutbound(true);
@@ -318,7 +349,9 @@ const SIP_Agent: React.FC = () => {
       // }); 
       // await joinChannel();
       toast.success('Outbound call started');
-      setOutboundState(OUTBOUND_STATES.CONNECTED);
+      if (!response.data?.sipCallData?.isLC){
+        setOutboundState(OUTBOUND_STATES.CONNECTED);
+      }
     }
     catch (error: any) {
       setOutboundState(OUTBOUND_STATES.IDLE);
