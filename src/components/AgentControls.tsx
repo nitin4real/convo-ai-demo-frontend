@@ -155,7 +155,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                         >
                             {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                         </Button>
-                        {enableMetric && <Button
+                        {true && <Button
                             title="Metrics"
                             onClick={() => setShowMetrics(!showMetrics)}
                             variant={showMetrics ? "destructive" : "outline"}
