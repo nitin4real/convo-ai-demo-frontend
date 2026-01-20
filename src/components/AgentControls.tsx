@@ -46,9 +46,9 @@ export const AgentControls = (props: IAgentControlProps) => {
         handleEndConversation,
         toggleMute,
         isMuted,
-        enableMetric } = props;
+        } = props;
     const [isLoading, setIsLoading] = useState(false);
-
+    const enableMetric = true;
     return <div className=''>
         <div className="flex flex-col items-center gap-6 p-4">
             <div className="flex flex-col items-center gap-4">
@@ -124,7 +124,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                             >
                                 {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                             </Button>
-                            {true && <Button
+                            {enableMetric && <Button
                                 title="Metrics"
                                 onClick={() => setShowMetrics(!showMetrics)}
                                 variant={showMetrics ? "destructive" : "outline"}
@@ -155,7 +155,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                         >
                             {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
                         </Button>
-                        {true && <Button
+                        {enableMetric && <Button
                             title="Metrics"
                             onClick={() => setShowMetrics(!showMetrics)}
                             variant={showMetrics ? "destructive" : "outline"}
