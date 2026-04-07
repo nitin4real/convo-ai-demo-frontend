@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { toast } from 'sonner';
 import { AgoraChannelResponse } from '@/services/agora.rtc.service';
-import { AgentTile } from '@/types/agent.types';
+import { AgentTile, Layout } from '@/types/agent.types';
 import { IProperties } from './CustomAgent/CustomAgent';
 
 interface IAgentControlProps {
@@ -48,7 +48,10 @@ export const AgentControls = (props: IAgentControlProps) => {
         isMuted,
         } = props;
     const [isLoading, setIsLoading] = useState(false);
-    const enableMetric = true;
+    let enableMetric = true;
+    if(agentDetails?.layout === Layout.AVATAR_LANDSCAPE_TRANSCRIPT || agentDetails?.layout === Layout.AVATAR_TRANSCRIPT) {
+        enableMetric = false;
+    }
     return <div className=''>
         <div className="flex flex-col items-center gap-6 p-4">
             <div className="flex flex-col items-center gap-4">
