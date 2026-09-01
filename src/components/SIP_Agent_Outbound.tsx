@@ -14,9 +14,9 @@ import { FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { Card, CardContent } from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
-import AgoraRTMService from '../services/agora.rtm.services';
 import { SipOutboundControls } from './SipOutboundControls';
 import { MetricList } from './MetricList';
+import { applyTurnMetricBatch, upsertMetric } from '../utils/metrics.utils';
 
 
 export enum INBOUND_STATES {
@@ -48,8 +48,6 @@ const SIP_Agent: React.FC = () => {
   const [isAgentStarted, setIsAgentStarted] = useState(false);
   const [isMutedRemoteUsers, setIsMutedRemoteUsers] = useState(true);
   const [outboundState, setOutboundState] = useState(OUTBOUND_STATES.IDLE);
-  // ref for agoraRTMService
-  const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
@@ -107,7 +105,10 @@ const SIP_Agent: React.FC = () => {
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
       },
       onMetric: (metric) => {
-        setMetrics(prev => [...prev, metric]);
+        setMetrics(prev => upsertMetric(prev, metric));
+      },
+      onMetricBatch: (batch) => {
+        setMetrics(prev => applyTurnMetricBatch(prev, batch));
       },
       onMessage: (message) => {
         setTranscripts(prev => {
@@ -162,7 +163,6 @@ const SIP_Agent: React.FC = () => {
 
     try {
       await agoraRTCService.joinChannel(channelInfo);
-      await agoraRTMServiceRef.current?.login();
       //  by default mute self audio
       setIsJoined(true);
     } catch (error) {
@@ -172,15 +172,11 @@ const SIP_Agent: React.FC = () => {
 
   const leaveChannel = async () => {
     await agoraRTCService.leaveChannel();
-    await agoraRTMServiceRef.current?.logout();
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
-    setMetrics([]);
     // stopHeartbeat();
     convoAgentId.current = null;
-    // refresh page
-    window.location.reload();
   };
 
   const toggleMute = () => {

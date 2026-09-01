@@ -52,6 +52,11 @@ export interface IMetricMessage {
   latency_ms: number
 }
 
+export interface ITurnMetricBatch {
+  turn_id: number
+  metrics: IMetricMessage[]
+}
+
 export const enum Layout {
   DEFAULT = 'DEFAULT',
   METADATA_TRANSCRIPT = 'METADATA_TRANSCRIPT',

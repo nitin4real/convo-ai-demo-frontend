@@ -1,18 +1,15 @@
-import AgoraRTM, { RTMClient } from 'agora-rtm-sdk';
-
-const { RTM } = AgoraRTM;
+import AgoraRTM, { RTMClient, RTMEvents } from 'agora-rtm';
+import { IMessage, IMetricMessage, ITurnMetricBatch } from '../types/agent.types';
+import { messageEngine } from './agora.message.service';
 
 export interface AgoraRTMServiceCallbacks {
-    onMessage?: (message: any) => void;
-}
-
-enum AgoraRTMMessageType {
-    DATA_POINT = 'data_point',
-}
-
-export interface AgoraRTMMessage {
-    type: AgoraRTMMessageType;
-    data: any;
+    onMessage?: (message: IMessage) => void;
+    onMetric?: (metric: IMetricMessage) => void;
+    onMetricBatch?: (batch: ITurnMetricBatch) => void;
+    onEvent?: (eventName: string) => void;
+    onRawMessage?: (message: RTMEvents.MessageEvent) => void;
+    onLinkState?: (linkState: RTMEvents.LinkStateEvent) => void;
+    onTokenWillExpire?: () => Promise<string> | string;
 }
 
 export interface RTMConfig {
@@ -25,55 +22,151 @@ export interface RTMConfig {
 class AgoraRTMService {
     private client: RTMClient | null = null;
     private callbacks: AgoraRTMServiceCallbacks = {};
-    private rtmConfig: RTMConfig = {
-        appId: '',
-        token: '',
-        channel: '',
-        uid: ''
+    private isLoggedIn = false;
+    private isSubscribed = false;
+
+    constructor(private readonly rtmConfig: RTMConfig) { }
+
+    private readonly handleMessage = (event: RTMEvents.MessageEvent) => {
+        if (event.channelName !== this.rtmConfig.channel) {
+            return;
+        }
+
+        this.callbacks.onRawMessage?.(event);
+
+        const { transcript, metric, metricBatch, eventName } = messageEngine.handleRTMMessage(
+            event.message,
+            event.customType
+        );
+
+        if (transcript) {
+            this.callbacks.onMessage?.(transcript);
+        } else if (metric) {
+            this.callbacks.onMetric?.(metric);
+        } else if (metricBatch) {
+            this.callbacks.onMetricBatch?.(metricBatch);
+        } else if (eventName) {
+            this.callbacks.onEvent?.(eventName);
+        }
+    };
+
+    private readonly handleLinkState = (linkState: RTMEvents.LinkStateEvent) => {
+        this.callbacks.onLinkState?.(linkState);
+    };
+
+    private readonly handleTokenEvent = async (event: RTMEvents.TokenEvent) => {
+        if (event.eventType !== 'WILL_EXPIRE') {
+            return;
+        }
+
+        try {
+            const token = await this.callbacks.onTokenWillExpire?.();
+            if (token) {
+                await this.renewToken(token);
+            }
+        } catch (error) {
+            console.error('[agora.rtm.service] Failed to renew the RTM token:', error);
+        }
+    };
+
+    private createClient(): RTMClient {
+        const client = new AgoraRTM.RTM(this.rtmConfig.appId, this.rtmConfig.uid);
+        client.addEventListener('message', this.handleMessage);
+        client.addEventListener('linkState', this.handleLinkState);
+        client.addEventListener('token', this.handleTokenEvent);
+        return client;
     }
 
-    constructor(rtmConfig: RTMConfig) {
-        this.rtmConfig = rtmConfig;
+    private removeEventListeners(client: RTMClient): void {
+        client.removeEventListener('message', this.handleMessage);
+        client.removeEventListener('linkState', this.handleLinkState);
+        client.removeEventListener('token', this.handleTokenEvent);
+    }
+
+    async login(): Promise<void> {
+        if (this.isLoggedIn && this.isSubscribed) {
+            return;
+        }
+
+        const client = this.client ?? this.createClient();
+        this.client = client;
+
         try {
-            this.client = new RTM(rtmConfig.appId, rtmConfig.uid);
-            this.addEventListeners();
+            await client.login({ token: this.rtmConfig.token });
+            this.isLoggedIn = true;
+
+            await client.subscribe(this.rtmConfig.channel, {
+                withMessage: true,
+                withPresence: true,
+            });
+            this.isSubscribed = true;
         } catch (error) {
-            console.error('[agora.rtm.service]', 'Error initializing RTM client:', error);
+            await this.resetClient();
+            console.error('[agora.rtm.service] Failed to log in and subscribe:', error);
+            throw error;
         }
     }
 
-    addEventListeners() {
-        this.client?.addEventListener('message', (message) => {
-            this.callbacks.onMessage?.(message);
-            console.log('[agora.rtm.service]', 'RTM client message:', message);
-        });
-    }
-
-    async login() {
-        try {
-            await this.client?.login({ token: this.rtmConfig.token });
-            console.log('[agora.rtm.service]', 'RTM client logged in');
-        } catch (error) {
-            console.error('[agora.rtm.service]', 'Error logging in to RTM:', error);
+    async leaveChannel(): Promise<void> {
+        if (!this.client || !this.isSubscribed) {
+            return;
         }
+
+        await this.client.unsubscribe(this.rtmConfig.channel);
+        this.isSubscribed = false;
     }
 
-    async logout() {
-        try {
-            await this.client?.logout();
-            console.log('[agora.rtm.service]', 'RTM client logged out');
-        } catch (error) {
-            console.error('[agora.rtm.service]', 'Error logging out of RTM:', error);
+    async logout(): Promise<void> {
+        await this.resetClient();
+    }
+
+    async renewToken(token: string): Promise<void> {
+        if (!this.client || !this.isLoggedIn) {
+            throw new Error('Cannot renew an RTM token before login');
         }
+
+        await this.client.renewToken(token);
+        this.rtmConfig.token = token;
     }
 
-    setCallbacks(callbacks: AgoraRTMServiceCallbacks) {
+    setCallbacks(callbacks: AgoraRTMServiceCallbacks): void {
         this.callbacks = callbacks;
     }
 
+    private async resetClient(): Promise<void> {
+        const client = this.client;
+        if (!client) {
+            this.isLoggedIn = false;
+            this.isSubscribed = false;
+            return;
+        }
 
-    async leaveChannel(): Promise<void> {
+        let cleanupError: unknown;
 
+        if (this.isSubscribed) {
+            try {
+                await client.unsubscribe(this.rtmConfig.channel);
+            } catch (error) {
+                cleanupError = error;
+            }
+        }
+
+        if (this.isLoggedIn) {
+            try {
+                await client.logout();
+            } catch (error) {
+                cleanupError ??= error;
+            }
+        }
+
+        this.removeEventListeners(client);
+        this.client = null;
+        this.isLoggedIn = false;
+        this.isSubscribed = false;
+
+        if (cleanupError) {
+            throw cleanupError;
+        }
     }
 }
 

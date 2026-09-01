@@ -14,9 +14,11 @@ import {  FeedbackDialogRef } from './FeedbackDialog';
 import Header from './Header';
 import { Card, CardContent} from './ui/card';
 import { TranscriptionList } from './TranscriptionList';
-import AgoraRTMService from '../services/agora.rtm.services';
 import { SipInboundControls } from './SipInboundControls';
 import { MetricList } from './MetricList';
+import { Button } from './ui/button';
+import { Copy } from 'lucide-react';
+import { applyTurnMetricBatch, upsertMetric } from '../utils/metrics.utils';
 
 
 export enum INBOUND_STATES {
@@ -49,8 +51,6 @@ const SIP_Agent: React.FC = () => {
   const [isAgentStarted, setIsAgentStarted] = useState(false);
   const [isMutedRemoteUsers, setIsMutedRemoteUsers] = useState(true);
   const [inboundState, setInboundState] = useState(INBOUND_STATES.IDLE);
-  // ref for agoraRTMService
-  const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [agentDetails, setAgentDetails] = useState<AgentTile | null>(null);
@@ -135,6 +135,9 @@ const SIP_Agent: React.FC = () => {
     if(response?.data?.agoraLCEvents?.length > 0) {
       const latestEvent = response?.data?.agoraLCEvents[0];
       console.log('Agora LC Event:', latestEvent);
+      if(latestEvent?.agent_id ){
+        convoAgentId.current = latestEvent?.agent_id;
+      }
       if(latestEvent?.state === 'START') {
         setInboundState(INBOUND_STATES.RINGING);
         tryToJoinChannel(latestEvent?.channel);
@@ -190,7 +193,10 @@ const SIP_Agent: React.FC = () => {
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
       },
       onMetric: (metric) => {
-        setMetrics(prev => [...prev, metric]);
+        setMetrics(prev => upsertMetric(prev, metric));
+      },
+      onMetricBatch: (batch) => {
+        setMetrics(prev => applyTurnMetricBatch(prev, batch));
       },
       onMessage: (message) => {
         setTranscripts(prev => {
@@ -226,17 +232,25 @@ const SIP_Agent: React.FC = () => {
   const stopAgent = async () => {
     if (!convoAgentId.current) return;
 
-    try {
-      await axios.post(
-        `${API_CONFIG.ENDPOINTS.AGENT.STOP}`,
-        {}
-      );
-      console.log('Loggin Service', 'Agent stopped');
-      setIsAgentStarted(false);
-      // stopHeartbeat();
-      convoAgentId.current = null;
-    } catch (error) {
-      console.error('Failed to stop agent:', error);
+    // try {
+    //   await axios.post(
+    //     `${API_CONFIG.ENDPOINTS.AGENT.STOP}`,
+    //     {}
+    //   );
+    //   console.log('Loggin Service', 'Agent stopped');
+    //   setIsAgentStarted(false);
+    //   // stopHeartbeat();
+    //   convoAgentId.current = null;
+    // } catch (error) {
+    //   console.error('Failed to stop agent:', error);
+    // }
+  };
+
+
+  const handleCopyAgentId = () => {
+    if (convoAgentId.current) {
+      navigator.clipboard.writeText(convoAgentId.current);
+      toast.success('ConvoAI Agent ID copied to clipboard');
     }
   };
 
@@ -245,7 +259,6 @@ const SIP_Agent: React.FC = () => {
 
     try {
       await agoraRTCService.joinChannel(channelInfo);
-      await agoraRTMServiceRef.current?.login();
       //  by default mute self audio
       setIsJoined(true);
     } catch (error) {
@@ -255,15 +268,11 @@ const SIP_Agent: React.FC = () => {
 
   const leaveChannel = async () => {
     await agoraRTCService.leaveChannel();
-    await agoraRTMServiceRef.current?.logout();
     setIsJoined(false);
     setIsAgentStarted(false);
     setRemoteUsers([]);
-    setMetrics([]);
     // stopHeartbeat();
     convoAgentId.current = null;
-    // refresh page
-    window.location.reload();
   };
 
   const toggleMute = () => {
@@ -532,6 +541,18 @@ const SIP_Agent: React.FC = () => {
                     <div className="text-center space-y-4 max-w-2xl">
                       <div>
                         <h2 className="text-2xl font-semibold mb-2">{agentDetails.name}</h2>
+                        {convoAgentId.current && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                              onClick={handleCopyAgentId}
+                              title="Copy ConvoAI Agent ID"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
+
                         <p className="text-muted-foreground">{agentDetails.description}</p>
                       </div>
                       {agentDetails.features && agentDetails.features.length > 0 && (

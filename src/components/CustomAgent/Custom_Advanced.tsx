@@ -32,13 +32,10 @@ const CustomAdvanced = ({
                 <div className="flex items-center space-x-2">
                     <Switch
                         id="enable-rtm"
-                        checked={advancedFeatures.enable_rtm}
-                        onCheckedChange={(checked) => setAdvancedFeatures({
-                            ...advancedFeatures,
-                            enable_rtm: checked
-                        })}
+                        checked={true}
+                        disabled
                     />
-                    <Label htmlFor="enable-rtm">Enable RTM</Label>
+                    <Label htmlFor="enable-rtm">RTM enabled (required)</Label>
                 </div>
 
                 <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
@@ -49,4 +46,4 @@ const CustomAdvanced = ({
     )
 }
 
-export default CustomAdvanced 
+export default CustomAdvanced

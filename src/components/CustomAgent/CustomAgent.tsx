@@ -336,20 +336,20 @@ export const DEFAULT_TURN_DETECTION_VALUES: TURN_DETECTION = {
 
 
 export const DEFAULT_PARAMETERS: PARAMETERS = {
-    data_channel: 'datastream',
+    data_channel: 'rtm',
     enable_metrics: false,
     enable_error_message: false,
     silence_config: DEFAULT_SILENCE_CONFIG,
 }
 
 export const DEFAULT_MLLM_PARAMETERS: PARAMETERS = {
-    data_channel: 'datastream',
+    data_channel: 'rtm',
     enable_metrics: false,
     enable_error_message: false,
 }
 
 export interface PARAMETERS {
-    data_channel: 'datastream' | 'rtm'
+    data_channel: 'rtm'
     enable_metrics: boolean
     enable_error_message: boolean
     silence_config?: SILENCE_CONFIG
@@ -384,7 +384,10 @@ const PLACEHOLDER_JSON: IProperties = {
     tts: { ...DEFAULT_MICROSOFT_TTS },
     avatar: { ...DEFAULT_AKOOL_AVATAR },
     turn_detection: { ...DEFAULT_TURN_DETECTION_VALUES },
-    parameters: { ...DEFAULT_PARAMETERS }
+    parameters: { ...DEFAULT_PARAMETERS },
+    advanced_features: {
+        enable_rtm: true
+    }
 }
 
 
@@ -399,6 +402,7 @@ const PLACEHOLDER_JSON_MLLM: IProperties = {
     turn_detection: { ...DEFAULT_TURN_DETECTION_VALUES },
     parameters: { ...DEFAULT_PARAMETERS },
     advanced_features: {
+        enable_rtm: true,
         enable_mllm: true
     }
 }
@@ -472,7 +476,7 @@ export default function CustomAgent({ onCreateAgent }: { onCreateAgent: (agent: 
 
     const [advancedFeatures, setAdvancedFeatures] = useState<AdvanceFeatures>({
         enable_aivad: false,
-        enable_rtm: false,
+        enable_rtm: true,
         enable_mllm: false
     })
 
@@ -513,7 +517,7 @@ export default function CustomAgent({ onCreateAgent }: { onCreateAgent: (agent: 
             setActiveTab("mllm") // Switch to MLLM tab when enabling MLLM
             setAdvancedFeatures({
                 enable_aivad: false,
-                enable_rtm: false,
+                enable_rtm: true,
                 enable_mllm: true
             })
             setJsonText(JSON.stringify(PLACEHOLDER_JSON_MLLM, null, 2))
@@ -521,7 +525,7 @@ export default function CustomAgent({ onCreateAgent }: { onCreateAgent: (agent: 
             setActiveTab("asr") // Switch to ASR tab when disabling MLLM
             setAdvancedFeatures({
                 enable_aivad: false,
-                enable_rtm: false,
+                enable_rtm: true,
                 enable_mllm: false
             })
             setJsonText(JSON.stringify(PLACEHOLDER_JSON, null, 2))
@@ -665,7 +669,7 @@ export default function CustomAgent({ onCreateAgent }: { onCreateAgent: (agent: 
         setMllmConfig(DEFAULT_MLLM)
         setAdvancedFeatures({
             enable_aivad: false,
-            enable_rtm: false,
+            enable_rtm: true,
             enable_mllm: false
         })
         setUseMllm(false)

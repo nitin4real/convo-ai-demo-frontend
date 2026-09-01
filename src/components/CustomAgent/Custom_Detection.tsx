@@ -198,16 +198,12 @@ const CustomTurnDetection = ({
                     <Label htmlFor="data-channel">Data Channel</Label>
                     <Select
                         value={parametersConfig.data_channel}
-                        onValueChange={(value) => setParametersConfig({
-                            ...parametersConfig,
-                            data_channel: value as 'datastream' | 'rtm'
-                        })}
+                        disabled
                     >
                         <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="datastream">DataStream</SelectItem>
                             <SelectItem value="rtm">RTM</SelectItem>
                         </SelectContent>
                     </Select>
@@ -314,4 +310,4 @@ const CustomTurnDetection = ({
     )
 }
 
-export default CustomTurnDetection 
+export default CustomTurnDetection

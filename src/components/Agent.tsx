@@ -17,13 +17,13 @@ import { Copy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { TranscriptionList } from './TranscriptionList';
-import AgoraRTMService from '../services/agora.rtm.services';
 import { MetaDataView } from './MetaDataView';
 import { Layout } from '@/types/agent.types';
 import CustomAgent, { IProperties } from './CustomAgent/CustomAgent';
 import { AgentControls } from './AgentControls';
 import { MetricList } from './MetricList';
 import { IMetricMessage } from '../types/agent.types';
+import { applyTurnMetricBatch, upsertMetric } from '../utils/metrics.utils';
 
 const Agent: React.FC = () => {
   const { agentId } = useParams();
@@ -35,8 +35,6 @@ const Agent: React.FC = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAgentStarted, setIsAgentStarted] = useState(false);
-  // ref for agoraRTMService
-  const agoraRTMServiceRef = useRef<AgoraRTMService | null>(null);
   const [metaData, setMetaData] = useState<any[]>([]);
   // @ts-ignore
   const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
@@ -45,6 +43,8 @@ const Agent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState('');
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [transcripts, setTranscripts] = useState<IMessage[]>([]);
   const [showTranscriptions, setShowTranscriptions] = useState(false);
@@ -53,6 +53,22 @@ const Agent: React.FC = () => {
   const [customAgentProperties, setCustomAgentProperties] = useState<IProperties | null>(null);
   const videoRef = useRef<any>(null);
   // const selfVideoRef = useRef<any>(null);
+
+  const refreshMicrophones = async (skipPermissionCheck: boolean = true) => {
+    try {
+      const availableMicrophones = await agoraRTCService.getMicrophones(skipPermissionCheck);
+      setMicrophones(availableMicrophones);
+      setSelectedMicrophoneId((currentId) => {
+        if (currentId && availableMicrophones.some(({ deviceId }) => deviceId === currentId)) {
+          return currentId;
+        }
+
+        return availableMicrophones[0]?.deviceId ?? '';
+      });
+    } catch (error) {
+      console.error('Failed to load microphones:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchAgentDetails = async () => {
@@ -75,6 +91,25 @@ const Agent: React.FC = () => {
 
     fetchAgentDetails();
   }, [agentId]);
+
+  useEffect(() => {
+    void refreshMicrophones(true);
+
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.addEventListener) {
+      return;
+    }
+
+    const handleDeviceChange = () => {
+      void refreshMicrophones(true);
+    };
+
+    mediaDevices.addEventListener('devicechange', handleDeviceChange);
+
+    return () => {
+      mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
+  }, []);
 
   const sendHeartbeat = async () => {
     if (!convoAgentId.current) return;
@@ -138,17 +173,6 @@ const Agent: React.FC = () => {
       try {
         const info = await agoraRTCService.getChannelInfo(agentId || '');
         setChannelInfo(info);
-        agoraRTMServiceRef.current = new AgoraRTMService({
-          appId: info.appId,
-          token: info.rtmToken,
-          channel: info.channelName,
-          uid: info.uid.toString()
-        });
-        agoraRTMServiceRef.current?.setCallbacks({
-          onMessage: (message) => {
-            setMetaData(prev => [...prev, message]);
-          }
-        });
       } catch (error) {
         console.error('Failed to get channel info:', error);
       }
@@ -164,6 +188,7 @@ const Agent: React.FC = () => {
   }, [agentId]);
 
   useEffect(() => {
+    agoraRTCService.setAsSIPAgent(false);
     agoraRTCService.setCallbacks({
       onUserJoined: (user) => {
         console.log('Loggin Service', 'User joined:', user);
@@ -174,7 +199,10 @@ const Agent: React.FC = () => {
         setRemoteUsers(prev => prev.filter(user => user.uid !== uid));
       },
       onMetric: (metric) => {
-        setMetrics(prev => [...prev, metric]);
+        setMetrics(prev => upsertMetric(prev, metric));
+      },
+      onMetricBatch: (batch) => {
+        setMetrics(prev => applyTurnMetricBatch(prev, batch));
       },
       onMessage: (message) => {
         setTranscripts(prev => {
@@ -196,6 +224,9 @@ const Agent: React.FC = () => {
           }
           return [...prev, message];
         });
+      },
+      onRawRTMMessage: (message) => {
+        setMetaData(prev => [...prev, message]);
       },
       onUserPublished: (user, mediaType) => {
         if (mediaType === 'video') {
@@ -270,8 +301,8 @@ const Agent: React.FC = () => {
     if (!channelInfo) return;
 
     try {
-      await agoraRTCService.joinChannel(channelInfo);
-      await agoraRTMServiceRef.current?.login();
+      await agoraRTCService.joinChannel(channelInfo, selectedMicrophoneId || undefined);
+      await refreshMicrophones(false);
       // const localVideoTrack = agoraRTCService.getLocalVideoTrack();
       // if (localVideoTrack) {
       //   console.log('Playing local video track', localVideoTrack);
@@ -286,20 +317,42 @@ const Agent: React.FC = () => {
 
   const leaveChannel = async () => {
     await agoraRTCService.leaveChannel();
-    await agoraRTMServiceRef.current?.logout();
     setIsJoined(false);
     setIsAgentStarted(false);
+    setIsMuted(false);
     setRemoteUsers([]);
-    setMetrics([]);
     stopHeartbeat();
     convoAgentId.current = null;
   };
 
-  const toggleMute = () => {
-    console.log('Current mute state', isMuted);
-    console.log('Toggling mute state', !isMuted);
-    agoraRTCService.toggleAudio(isMuted);
-    setIsMuted(!isMuted);
+  const handleMicrophoneChange = async (microphoneId: string) => {
+    const previousMicrophoneId = selectedMicrophoneId;
+    setSelectedMicrophoneId(microphoneId);
+
+    if (!isJoined) {
+      return;
+    }
+
+    try {
+      await agoraRTCService.setMicrophoneDevice(microphoneId);
+      await refreshMicrophones(false);
+    } catch (error) {
+      console.error('Failed to switch microphone:', error);
+      setSelectedMicrophoneId(previousMicrophoneId);
+      toast.error('Failed to switch microphone');
+    }
+  };
+
+  const toggleMute = async () => {
+    const nextMuted = !isMuted;
+
+    try {
+      await agoraRTCService.toggleAudio(!nextMuted, selectedMicrophoneId || undefined);
+      setIsMuted(nextMuted);
+    } catch (error) {
+      console.error('Failed to toggle microphone:', error);
+      toast.error(`Failed to ${nextMuted ? 'mute' : 'unmute'} microphone`);
+    }
   };
 
   const handleTimeout = () => {
@@ -394,6 +447,9 @@ const Agent: React.FC = () => {
     setSelectedLanguage={setSelectedLanguage}
     customAgentProperties={customAgentProperties}
     setCustomAgentProperties={setCustomAgentProperties}
+    microphones={microphones}
+    selectedMicrophoneId={selectedMicrophoneId}
+    onMicrophoneChange={handleMicrophoneChange}
     showTranscriptions={showTranscriptions}
     setShowTranscriptions={setShowTranscriptions}
     enableMetric={agentDetails?.showMetric || false}

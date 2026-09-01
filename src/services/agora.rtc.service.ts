@@ -8,15 +8,25 @@ import AgoraRTC, {
   IRemoteVideoTrack,
   UID
 } from 'agora-rtc-sdk-ng';
-import { messageEngine } from './agora.message.service';
-import { IMessage, IMetricMessage } from '../types/agent.types';
+import { RTMEvents } from 'agora-rtm';
+import { IMessage, IMetricMessage, ITurnMetricBatch } from '../types/agent.types';
 import { AIDenoiserExtension } from 'agora-extension-ai-denoiser';
+import AgoraRTMService from './agora.rtm.services';
 export interface AgoraChannelResponse {
   appId: string;
   channelName: string;
   token: string;
   uid: number;
   rtmToken: string;
+}
+
+interface AgoraRTMTokenResponse {
+  uid: number;
+  rtmToken: string;
+}
+
+interface AgoraSipChannelResponse {
+  tokenData?: AgoraChannelResponse;
 }
 
 export interface RemoteUser {
@@ -32,6 +42,9 @@ export interface AgoraServiceCallbacks {
   onUserUnpublished?: (user: RemoteUser) => void;
   onMessage?: (message: IMessage) => void;
   onMetric?: (metric: IMetricMessage) => void;
+  onMetricBatch?: (batch: ITurnMetricBatch) => void;
+  onEvent?: (eventName: string) => void;
+  onRawRTMMessage?: (message: RTMEvents.MessageEvent) => void;
 }
 
 class AgoraRTCService {
@@ -42,6 +55,8 @@ class AgoraRTCService {
   private callbacks: AgoraServiceCallbacks = {};
   private isSIPAgent: boolean = false;
   private denoiser: AIDenoiserExtension | null = null;
+  private rtmService: AgoraRTMService | null = null;
+  private isJoined = false;
 
   constructor() {
     this.client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
@@ -104,15 +119,6 @@ class AgoraRTCService {
       }
     });
 
-    this.client.on('stream-message', (_: UID, payload: Uint8Array) => {
-      const { transcript, metric } = messageEngine.handleStreamMessage(payload)
-      if (transcript) {
-        this.callbacks.onMessage?.(transcript)
-      } else if (metric) {
-        this.callbacks.onMetric?.(metric)
-      }
-    })
-
   }
 
   muteRemoteUsers(): void {
@@ -147,7 +153,7 @@ class AgoraRTCService {
   }
 
   async getChannelInfoForSip(channelName: string): Promise<AgoraChannelResponse> {
-    const response = await axios.get<any>(
+    const response = await axios.get<AgoraSipChannelResponse>(
       `${API_CONFIG.ENDPOINTS.AGENT.CHANNEL_FOR_SIP}?channelName=${channelName}`
     );
     if (response.data.tokenData) {
@@ -156,31 +162,78 @@ class AgoraRTCService {
     throw new Error('Failed to get channel info for SIP');
   }
 
-  async joinChannel(channelInfo: AgoraChannelResponse): Promise<void> {
-    await this.client.join(
-      channelInfo.appId,
-      channelInfo.channelName,
-      channelInfo.token,
-      channelInfo.uid
+  async getMicrophones(skipPermissionCheck: boolean = true): Promise<MediaDeviceInfo[]> {
+    return AgoraRTC.getMicrophones(skipPermissionCheck);
+  }
+
+  private async createLocalAudioTrack(microphoneId?: string): Promise<IMicrophoneAudioTrack> {
+    const track = await AgoraRTC.createMicrophoneAudioTrack(
+      microphoneId ? { microphoneId } : undefined
     );
 
-    if (this.isSIPAgent) {
-      return
-    }
-
-    this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     try {
       if (this.denoiser) {
         const processor = this.denoiser.createProcessor();
-        processor.enable(); // .disable 
-        this.localAudioTrack.pipe(processor).pipe(this.localAudioTrack.processorDestination);
+        processor.enable();
+        track.pipe(processor).pipe(track.processorDestination);
         await processor.enable();
         console.log("AINS enabled success")
       }
     } catch (error) {
       console.log("AINS enabled failed", error)
     }
-    await this.client.publish([this.localAudioTrack]);
+
+    return track;
+  }
+
+  async joinChannel(channelInfo: AgoraChannelResponse, microphoneId?: string): Promise<void> {
+    try {
+      await this.client.join(
+        channelInfo.appId,
+        channelInfo.channelName,
+        channelInfo.token,
+        channelInfo.uid
+      );
+      this.isJoined = true;
+
+      this.rtmService = new AgoraRTMService({
+        appId: channelInfo.appId,
+        token: channelInfo.rtmToken,
+        channel: channelInfo.channelName,
+        uid: channelInfo.uid.toString(),
+      });
+      this.rtmService.setCallbacks({
+        onMessage: message => this.callbacks.onMessage?.(message),
+        onMetric: metric => this.callbacks.onMetric?.(metric),
+        onMetricBatch: batch => this.callbacks.onMetricBatch?.(batch),
+        onEvent: eventName => this.callbacks.onEvent?.(eventName),
+        onRawMessage: message => this.callbacks.onRawRTMMessage?.(message),
+        onTokenWillExpire: async () => {
+          const response = await axios.get<AgoraRTMTokenResponse>(
+            API_CONFIG.ENDPOINTS.AGORA.RTM_TOKEN
+          );
+          if (response.data.uid !== channelInfo.uid) {
+            throw new Error('The renewed RTM token identity does not match the joined user');
+          }
+          return response.data.rtmToken;
+        },
+      });
+      await this.rtmService.login();
+
+      if (this.isSIPAgent) {
+        return
+      }
+
+      this.localAudioTrack = await this.createLocalAudioTrack(microphoneId);
+      await this.client.publish([this.localAudioTrack]);
+    } catch (error) {
+      try {
+        await this.leaveChannel();
+      } catch (cleanupError) {
+        console.error('Failed to clean up after joining the Agora channel:', cleanupError);
+      }
+      throw error;
+    }
 
     // only for avatar landscape transcript
 
@@ -192,9 +245,34 @@ class AgoraRTCService {
     if (this.localAudioTrack) {
       this.localAudioTrack.close();
     }
-    await this.client.leave();
+    if (this.localVideoTrack) {
+      this.localVideoTrack.close();
+    }
+
+    let cleanupError: unknown;
+    if (this.isJoined) {
+      try {
+        await this.client.leave();
+      } catch (error) {
+        cleanupError = error;
+      }
+    }
+
+    try {
+      await this.rtmService?.logout();
+    } catch (error) {
+      cleanupError ??= error;
+    }
+
     this.localAudioTrack = null;
+    this.localVideoTrack = null;
+    this.rtmService = null;
+    this.isJoined = false;
     this.remoteUsers.clear();
+
+    if (cleanupError) {
+      throw cleanupError;
+    }
   }
 
   getLocalAudioTrack(): IMicrophoneAudioTrack | null {
@@ -209,14 +287,20 @@ class AgoraRTCService {
     return Array.from(this.remoteUsers.values());
   }
 
-  toggleAudio(enabled: boolean): void {
+  async setMicrophoneDevice(deviceId: string): Promise<void> {
+    if (!this.localAudioTrack) {
+      return;
+    }
+
+    await this.localAudioTrack.setDevice(deviceId);
+  }
+
+  async toggleAudio(enabled: boolean, microphoneId?: string): Promise<void> {
     if (this.localAudioTrack) {
-      this.localAudioTrack.setEnabled(enabled);
+      await this.localAudioTrack.setEnabled(enabled);
     } else {
-      (async () => {
-        this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        await this.client.publish([this.localAudioTrack]);
-      })();
+      this.localAudioTrack = await this.createLocalAudioTrack(microphoneId);
+      await this.client.publish([this.localAudioTrack]);
     }
   }
 }

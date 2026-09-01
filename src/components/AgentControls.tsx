@@ -16,6 +16,9 @@ interface IAgentControlProps {
     setSelectedLanguage: (value: string) => void;
     customAgentProperties: IProperties | null;
     setCustomAgentProperties: (value: IProperties | null) => void;
+    microphones: MediaDeviceInfo[];
+    selectedMicrophoneId: string;
+    onMicrophoneChange: (value: string) => Promise<void> | void;
     showTranscriptions: boolean;
     setShowTranscriptions: (value: boolean) => void;
     showMetrics: boolean;
@@ -23,7 +26,7 @@ interface IAgentControlProps {
     joinChannel: () => Promise<void>;
     startAgent: () => Promise<void>;
     handleEndConversation: () => Promise<void>;
-    toggleMute: () => void;
+    toggleMute: () => Promise<void>;
     isMuted: boolean;
     enableMetric: boolean;
 }
@@ -37,6 +40,9 @@ export const AgentControls = (props: IAgentControlProps) => {
         setSelectedLanguage,
         customAgentProperties,
         setCustomAgentProperties,
+        microphones,
+        selectedMicrophoneId,
+        onMicrophoneChange,
         showTranscriptions,
         setShowTranscriptions,
         showMetrics,
@@ -52,6 +58,27 @@ export const AgentControls = (props: IAgentControlProps) => {
     if(agentDetails?.layout === Layout.AVATAR_LANDSCAPE_TRANSCRIPT || agentDetails?.layout === Layout.AVATAR_TRANSCRIPT) {
         enableMetric = false;
     }
+
+    const microphoneSelector = microphones.length > 0 ? (
+        <Select
+            value={selectedMicrophoneId || ""}
+            onValueChange={(value) => {
+                void onMicrophoneChange(value);
+            }}
+        >
+            <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Select Microphone" />
+            </SelectTrigger>
+            <SelectContent>
+                {microphones.map((microphone, index) => (
+                    <SelectItem key={microphone.deviceId} value={microphone.deviceId}>
+                        {microphone.label || `Microphone ${index + 1}`}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    ) : null;
+
     return <div className=''>
         <div className="flex flex-col items-center gap-6 p-4">
             <div className="flex flex-col items-center gap-4">
@@ -74,6 +101,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                                 </SelectContent>
                             </Select>
                         )}
+                        {microphoneSelector}
                         <div className="flex items-center gap-2">
                             {agentDetails?.id === 'custom' && customAgentProperties && (
                                 <Button
@@ -140,41 +168,44 @@ export const AgentControls = (props: IAgentControlProps) => {
                     </>
                 )}
                 {isJoined && (
-                    <div className="flex items-center gap-2">
-                        <Button
-                            onClick={handleEndConversation}
-                            variant="destructive"
-                            size="lg"
-                            className="min-w-[200px]"
-                        >
-                            End Conversation
-                        </Button>
-                        <Button
-                            title="Transcriptions"
-                            onClick={() => setShowTranscriptions(!showTranscriptions)}
-                            variant={showTranscriptions ? "destructive" : "outline"}
-                            size="lg"
-                            className="w-10 h-10"
-                        >
-                            {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
-                        </Button>
-                        {enableMetric && <Button
-                            title="Metrics"
-                            onClick={() => setShowMetrics(!showMetrics)}
-                            variant={showMetrics ? "destructive" : "outline"}
-                            size="lg"
-                            className="w-10 h-10"
-                        >
-                            {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
-                        </Button>}
-                        {isJoined && <Button
-                            onClick={toggleMute}
-                            variant={isMuted ? "destructive" : "outline"}
-                            size="lg"
-                            className="w-10 h-10"
-                        >
-                            {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                        </Button>}
+                    <div className="flex flex-col items-center gap-3 w-full">
+                        {microphoneSelector}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={handleEndConversation}
+                                variant="destructive"
+                                size="lg"
+                                className="min-w-[200px]"
+                            >
+                                End Conversation
+                            </Button>
+                            <Button
+                                title="Transcriptions"
+                                onClick={() => setShowTranscriptions(!showTranscriptions)}
+                                variant={showTranscriptions ? "destructive" : "outline"}
+                                size="lg"
+                                className="w-10 h-10"
+                            >
+                                {showTranscriptions ? <CaptionsOff className="h-6 w-6" /> : <Captions className="h-6 w-6" />}
+                            </Button>
+                            {enableMetric && <Button
+                                title="Metrics"
+                                onClick={() => setShowMetrics(!showMetrics)}
+                                variant={showMetrics ? "destructive" : "outline"}
+                                size="lg"
+                                className="w-10 h-10"
+                            >
+                                {showMetrics ? <BarChart3 className="h-6 w-6" /> : <BarChart3 className="h-6 w-6" />}
+                            </Button>}
+                            {isJoined && <Button
+                                onClick={toggleMute}
+                                variant={isMuted ? "destructive" : "outline"}
+                                size="lg"
+                                className="w-10 h-10"
+                            >
+                                {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                            </Button>}
+                        </div>
                     </div>
                 )}
             </div>

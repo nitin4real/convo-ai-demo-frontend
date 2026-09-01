@@ -1,22 +1,44 @@
 import React, { useEffect, useRef } from 'react';
+import infoIcon from '../assets/info-outline-rounded.svg';
+import {
+  getMetricModuleLabel,
+  getMetricNameLabel,
+  METRIC_DEFINITIONS,
+} from '../constant/metric-definitions';
 import { IMetricMessage } from '../types/agent.types';
 import { Card, CardContent } from './ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
 
 interface MetricListProps {
   metrics: IMetricMessage[];
   isVisible: boolean;
 }
 
-interface ModuleMetrics {
-  [metric_name: string]: number;
-}
-
 interface TurnMetric {
   turn_id: number;
-  asr?: ModuleMetrics;
-  llm?: ModuleMetrics;
-  tts?: ModuleMetrics;
+  modules: Record<string, Record<string, number>>;
+  e2e_latency_ms?: number;
 }
+
+interface MetricColumn {
+  module: string;
+  metricName: string;
+}
+
+const MODULE_ORDER = ['algorithm', 'asr', 'llm', 'tts', 'transport'];
+const METRIC_ORDER = ['processing', 'ttlw', 'ttft', 'ftfs', 'ttfb', 'latency'];
+
+const getSortIndex = (order: string[], value: string): number => {
+  const index = order.indexOf(value);
+  return index === -1 ? order.length : index;
+};
 
 export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,46 +49,104 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
     }
   }, [metrics, isVisible]);
 
-  // Group metrics by turn_id, module, and metric_name
   const groupedMetrics = metrics.reduce((acc, metric) => {
     if (!acc[metric.turn_id]) {
       acc[metric.turn_id] = {
         turn_id: metric.turn_id,
+        modules: {},
       };
     }
 
+    const turn = acc[metric.turn_id];
     const module = metric.module.toLowerCase();
-    if (module === 'asr' || module === 'llm' || module === 'tts') {
-      if (!acc[metric.turn_id][module]) {
-        acc[metric.turn_id][module] = {};
-      }
-      acc[metric.turn_id][module]![metric.metric_name] = metric.latency_ms;
+    if (module === 'e2e') {
+      turn.e2e_latency_ms = metric.latency_ms;
+      return acc;
     }
+
+    turn.modules[module] ??= {};
+    turn.modules[module][metric.metric_name] = metric.latency_ms;
     return acc;
   }, {} as Record<number, TurnMetric>);
 
   const turnMetrics = Object.values(groupedMetrics).sort((a, b) => a.turn_id - b.turn_id);
-
-  // Get all unique metric names for each module
-  const getMetricNamesForModule = (module: 'asr' | 'llm' | 'tts'): string[] => {
-    const metricNames = new Set<string>();
-    turnMetrics.forEach(turn => {
-      if (turn[module]) {
-        Object.keys(turn[module]!).forEach(name => metricNames.add(name));
-      }
+  const columnMap = new Map<string, MetricColumn>();
+  turnMetrics.forEach(turn => {
+    Object.entries(turn.modules).forEach(([module, moduleMetrics]) => {
+      Object.keys(moduleMetrics).forEach(metricName => {
+        columnMap.set(`${module}:${metricName}`, { module, metricName });
+      });
     });
-    return Array.from(metricNames).sort();
+  });
+  const columns = Array.from(columnMap.values()).sort((left, right) => {
+    const moduleDifference = getSortIndex(MODULE_ORDER, left.module) -
+      getSortIndex(MODULE_ORDER, right.module);
+    if (moduleDifference !== 0) {
+      return moduleDifference;
+    }
+    return getSortIndex(METRIC_ORDER, left.metricName) -
+      getSortIndex(METRIC_ORDER, right.metricName);
+  });
+
+  const getTotal = (turn: TurnMetric): number => {
+    if (turn.e2e_latency_ms !== undefined) {
+      return turn.e2e_latency_ms;
+    }
+
+    return Object.values(turn.modules).reduce(
+      (moduleTotal, moduleMetrics) => moduleTotal + Object.values(moduleMetrics)
+        .reduce((metricTotal, latency) => metricTotal + latency, 0),
+      0
+    );
   };
 
-  const asrMetricNames = getMetricNamesForModule('asr');
-  const llmMetricNames = getMetricNamesForModule('llm');
-  const ttsMetricNames = getMetricNamesForModule('tts');
-
   return (
-    <Card className="shadow-lg p-2 h-full flex flex-col">
-      <div className="p-2 border-b flex-shrink-0">
-        <h2 className="text-base font-semibold">Metrics</h2>
-        <p className="text-xs text-muted-foreground mt-1">
+    <Card className="shadow-lg p-1 h-full flex flex-col">
+      <div className="px-2 py-1.5 border-b flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <h2 className="text-sm font-semibold">Metrics</h2>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Explain latency metrics"
+                title="About these metrics"
+              >
+                <img
+                  src={infoIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-4 w-4 dark:invert"
+                />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md p-5">
+              <DialogHeader>
+                <DialogTitle>Latency metrics</DialogTitle>
+                <DialogDescription>
+                  Each value is measured in milliseconds for one conversation turn.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                {METRIC_DEFINITIONS.map(metric => (
+                  <div key={metric.key} className="grid grid-cols-[72px_1fr] gap-3">
+                    <span className="font-mono text-[11px] font-semibold text-primary">
+                      {metric.shortLabel}
+                    </span>
+                    <div>
+                      <p className="text-xs font-medium">{metric.name}</p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {metric.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-0.5">
           Performance metrics by turn (in ms)
         </p>
       </div>
@@ -75,74 +155,48 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
           {turnMetrics.length > 0 ? (
             <div
               ref={containerRef}
-              className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide"
+              className="flex-1 overflow-auto"
             >
-              <div className="p-4">
-                <table className="w-full border-collapse table-fixed">
+              <div className="p-1 min-w-max">
+                <table className="w-full border-collapse">
                   <thead className="sticky top-0 bg-background z-10">
                     <tr className="border-b">
-                      <th className="text-left px-2 py-1 text-xs font-medium w-16">Turn ID</th>
-                      {asrMetricNames.length > 0 && (
-                        <>
-                          {asrMetricNames.map((metricName) => (
-                            <th key={`asr-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              ASR
-                            </th>
-                          ))}
-                        </>
-                      )}
-                      {llmMetricNames.length > 0 && (
-                        <>
-                          {llmMetricNames.map((metricName) => (
-                            <th key={`llm-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              LLM
-                            </th>
-                          ))}
-                        </>
-                      )}
-                      {ttsMetricNames.length > 0 && (
-                        <>
-                          {ttsMetricNames.map((metricName) => (
-                            <th key={`tts-${metricName}`} className="text-left px-2 py-1 text-xs font-medium">
-                              TTS
-                            </th>
-                          ))}
-                        </>
-                      )}
-                      <th className="text-left px-2 py-1 text-xs font-bold w-16">Total</th>
+                      <th className="text-left px-1 py-1 text-[10px] font-medium min-w-[38px] leading-tight">
+                        <span className="block">TURN</span>
+                        <span className="block text-[8px] font-normal text-muted-foreground">ID</span>
+                      </th>
+                      {columns.map(({ module, metricName }) => (
+                        <th
+                          key={`${module}-${metricName}`}
+                          className="text-left px-1 py-1 text-[10px] font-medium min-w-[42px] whitespace-nowrap leading-tight"
+                        >
+                          <span className="block">{getMetricModuleLabel(module)}</span>
+                          <span className="block text-[8px] font-normal text-muted-foreground">
+                            {getMetricNameLabel(metricName)}
+                          </span>
+                        </th>
+                      ))}
+                      <th className="text-left px-1 py-1 text-[10px] font-bold min-w-[44px] whitespace-nowrap leading-tight">
+                        <span className="block">E2E</span>
+                        <span className="block text-[8px] font-normal text-muted-foreground">
+                          TOTAL
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {turnMetrics.map((turn) => (
+                    {turnMetrics.map(turn => (
                       <tr key={turn.turn_id} className="border-b hover:bg-muted/50">
-                        <td className="p-2 font-medium text-xs w-16">{turn.turn_id}</td>
-                        {asrMetricNames.map((metricName) => (
-                          <td key={`asr-${metricName}`} className="p-2 text-xs">
-                            {turn.asr?.[metricName] !== undefined
-                              ? turn.asr[metricName].toFixed(0)
+                        <td className="px-1 py-1.5 font-medium text-[11px]">{turn.turn_id}</td>
+                        {columns.map(({ module, metricName }) => (
+                          <td key={`${module}-${metricName}`} className="px-1 py-1.5 text-[11px]">
+                            {turn.modules[module]?.[metricName] !== undefined
+                              ? turn.modules[module][metricName].toFixed(0)
                               : '-'}
                           </td>
                         ))}
-                        {llmMetricNames.map((metricName) => (
-                          <td key={`llm-${metricName}`} className="p-2 text-xs">
-                            {turn.llm?.[metricName] !== undefined
-                              ? turn.llm[metricName].toFixed(0)
-                              : '-'}
-                          </td>
-                        ))}
-                        {ttsMetricNames.map((metricName) => (
-                          <td key={`tts-${metricName}`} className="p-2 text-xs">
-                            {turn.tts?.[metricName] !== undefined
-                              ? turn.tts[metricName].toFixed(0)
-                              : '-'}
-                          </td>
-                        ))}
-                        <td className="p-2 text-xs font-bold">
-                          {(
-                            (turn.asr ? Object.values(turn.asr).reduce((a, b) => a + b, 0) : 0) +
-                            (turn.llm ? Object.values(turn.llm).reduce((a, b) => a + b, 0) : 0) +
-                            (turn.tts ? Object.values(turn.tts).reduce((a, b) => a + b, 0) : 0)
-                          ).toFixed(0)}
+                        <td className="px-1 py-1.5 text-[11px] font-bold">
+                          {getTotal(turn).toFixed(0)}
                         </td>
                       </tr>
                     ))}
@@ -160,4 +214,3 @@ export const MetricList: React.FC<MetricListProps> = ({ metrics, isVisible }) =>
     </Card>
   );
 };
-
