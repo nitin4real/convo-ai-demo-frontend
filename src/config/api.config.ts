@@ -1,11 +1,17 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://convo.agoraaidemo.in:3009',
+  BASE_URL: import.meta.env.VITE_API_BASE_URL ?? (
+    import.meta.env.DEV
+      ? 'http://localhost:3009'
+      : 'https://convo.agoraaidemo.in:3009'
+  ),
+
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/login'
     },
     AGORA: {
-      CHANNEL: '/api/agora/channel'
+      CHANNEL: '/api/agora/channel',
+      RTM_TOKEN: '/api/agora/rtm-token'
     },
     AGENT: {
       START: '/api/agent/start',
@@ -22,4 +28,4 @@ export const API_CONFIG = {
     },
     FEEDBACK: '/api/feedback'
   }
-} as const; 
+} as const;
