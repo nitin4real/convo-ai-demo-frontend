@@ -6,6 +6,7 @@ import SIP_Agent_Inbound from './components/SIP_Agent_Inbound';
 import Dashboard from './components/Dashboard';
 import AgentsList from './components/Agents';
 import Login from './components/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -16,12 +17,12 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/agents/:type" element={<Dashboard />} />
-          <Route path="/agents" element={<AgentsList />} />
-          <Route path="/agent/:agentId" element={<Agent />} />
-          <Route path="/sip-agent-inbound/:agentId" element={<SIP_Agent_Inbound />} />
-          <Route path="/sip-agent-outbound/:agentId" element={<SIP_Agent_Outbound />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/agents/:type" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/agents" element={<ProtectedRoute><AgentsList /></ProtectedRoute>} />
+          <Route path="/agent/:agentId" element={<ProtectedRoute><Agent /></ProtectedRoute>} />
+          <Route path="/sip-agent-inbound/:agentId" element={<ProtectedRoute><SIP_Agent_Inbound /></ProtectedRoute>} />
+          <Route path="/sip-agent-outbound/:agentId" element={<ProtectedRoute><SIP_Agent_Outbound /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
         <Toaster />
