@@ -17,6 +17,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/agents/:type" element={<Dashboard />} />
           <Route path="/agents" element={<AgentsList />} />
           <Route path="/agent/:agentId" element={<Agent />} />
           <Route path="/sip-agent-inbound/:agentId" element={<SIP_Agent_Inbound />} />

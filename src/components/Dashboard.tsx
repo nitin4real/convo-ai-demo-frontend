@@ -1,6 +1,6 @@
 import { handleUserErrors } from '@/utils/toast.utils';
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AgentTile, AgentType, Layout } from '../types/agent.types';
 import { API_CONFIG } from '../config/api.config';
 import axios from '../config/axios.config';
@@ -11,12 +11,14 @@ import AgentList from './AgentList';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { type } = useParams<{ type?: string }>();
   const feedbackDialogRef = useRef<FeedbackDialogRef>(null);
   const [agentTypes, setAgentTypes] = useState<AgentType[]>([]);
   const [agents, setAgents] = useState<AgentTile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [loadingAgents, setLoadingAgents] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const selectedType = type ?? null;
 
   useEffect(() => {
     const fetchAgentTypes = async () => {
@@ -29,7 +31,7 @@ const Dashboard: React.FC = () => {
         console.error('Failed to fetch agent types:', err);
         setError('Failed to load agent types. Please try again later.');
       } finally {
-        setLoading(false);
+        setLoadingTypes(false);
       }
     };
 
@@ -38,9 +40,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchAgentsByType = async () => {
-      if (!selectedType) return;
+      if (!selectedType) {
+        setAgents([]);
+        setLoadingAgents(false);
+        return;
+      }
       
-      setLoading(true);
+      setLoadingAgents(true);
       try {
         const response = await axios.get<AgentTile[]>(
           API_CONFIG.ENDPOINTS.AGENT.AGENTS_BY_TYPE.replace(':type', selectedType)
@@ -52,7 +58,7 @@ const Dashboard: React.FC = () => {
         console.error('Failed to fetch agents:', err);
         setError('Failed to load agents. Please try again later.');
       } finally {
-        setLoading(false);
+        setLoadingAgents(false);
       }
     };
 
@@ -60,7 +66,7 @@ const Dashboard: React.FC = () => {
   }, [selectedType]);
 
   const handleTypeClick = (typeId: string) => {
-    setSelectedType(typeId);
+    navigate(`/agents/${encodeURIComponent(typeId)}`);
   };
 
   const handleAgentClick = (agentId: string, agent: AgentTile) => {
@@ -75,7 +81,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading && !selectedType) {
+  if (loadingTypes && !selectedType) {
     return (
       <div className="min-h-screen bg-background">
         <Header feedbackDialogRef={feedbackDialogRef} />
@@ -127,8 +133,8 @@ const Dashboard: React.FC = () => {
         ) : (
           <AgentList 
             agents={agents}
-            loading={loading}
-            onBackClick={() => setSelectedType(null)}
+            loading={loadingAgents}
+            onBackClick={() => navigate('/dashboard')}
             onAgentClick={handleAgentClick}
           />
         )}
