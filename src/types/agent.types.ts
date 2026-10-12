@@ -37,6 +37,8 @@ export interface AgentTile {
   showMetric: boolean;
   languages: AgentLanguage[];
   layout: Layout;
+  /** Set by the backend for agents that publish messages over RTC data streams. */
+  useRtcStreamMessages?: boolean;
 }
 
 export interface IMessage {

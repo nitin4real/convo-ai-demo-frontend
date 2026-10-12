@@ -12,12 +12,13 @@ import { RTMEvents } from 'agora-rtm';
 import { IMessage, IMetricMessage, ITurnMetricBatch } from '../types/agent.types';
 import { AIDenoiserExtension } from 'agora-extension-ai-denoiser';
 import AgoraRTMService from './agora.rtm.services';
+import { messageEngine } from './agora.message.service';
 export interface AgoraChannelResponse {
   appId: string;
   channelName: string;
   token: string;
   uid: number;
-  rtmToken: string;
+  rtmToken?: string;
 }
 
 interface AgoraRTMTokenResponse {
@@ -45,6 +46,7 @@ export interface AgoraServiceCallbacks {
   onMetricBatch?: (batch: ITurnMetricBatch) => void;
   onEvent?: (eventName: string) => void;
   onRawRTMMessage?: (message: RTMEvents.MessageEvent) => void;
+  onRawStreamMessage?: (uid: UID, payload: Uint8Array) => void;
 }
 
 class AgoraRTCService {
@@ -54,6 +56,7 @@ class AgoraRTCService {
   private remoteUsers: Map<UID, RemoteUser> = new Map();
   private callbacks: AgoraServiceCallbacks = {};
   private isSIPAgent: boolean = false;
+  private useRtcStreamMessages: boolean = false;
   private denoiser: AIDenoiserExtension | null = null;
   private rtmService: AgoraRTMService | null = null;
   private isJoined = false;
@@ -77,6 +80,16 @@ class AgoraRTCService {
   }
 
   private setupEventListeners() {
+    this.client.on('stream-message', (uid, payload) => {
+      if (!this.useRtcStreamMessages) {
+        return;
+      }
+
+      this.callbacks.onRawStreamMessage?.(uid, payload);
+      const { transcript, metric, metricBatch, eventName } = messageEngine.handleStreamMessage(payload);
+      this.dispatchMessageResult({ transcript, metric, metricBatch, eventName });
+    });
+
     this.client.on('user-joined', async (user) => {
       this.remoteUsers.set(user.uid, { uid: user.uid });
       this.callbacks.onUserJoined?.(this.remoteUsers.get(user.uid)!);
@@ -141,6 +154,10 @@ class AgoraRTCService {
     this.isSIPAgent = isSIPAgent;
   }
 
+  setUseRtcStreamMessages(enabled: boolean): void {
+    this.useRtcStreamMessages = enabled;
+  }
+
   setCallbacks(callbacks: AgoraServiceCallbacks) {
     this.callbacks = callbacks;
   }
@@ -196,29 +213,35 @@ class AgoraRTCService {
       );
       this.isJoined = true;
 
-      this.rtmService = new AgoraRTMService({
-        appId: channelInfo.appId,
-        token: channelInfo.rtmToken,
-        channel: channelInfo.channelName,
-        uid: channelInfo.uid.toString(),
-      });
-      this.rtmService.setCallbacks({
-        onMessage: message => this.callbacks.onMessage?.(message),
-        onMetric: metric => this.callbacks.onMetric?.(metric),
-        onMetricBatch: batch => this.callbacks.onMetricBatch?.(batch),
-        onEvent: eventName => this.callbacks.onEvent?.(eventName),
-        onRawMessage: message => this.callbacks.onRawRTMMessage?.(message),
-        onTokenWillExpire: async () => {
-          const response = await axios.get<AgoraRTMTokenResponse>(
-            API_CONFIG.ENDPOINTS.AGORA.RTM_TOKEN
-          );
-          if (response.data.uid !== channelInfo.uid) {
-            throw new Error('The renewed RTM token identity does not match the joined user');
-          }
-          return response.data.rtmToken;
-        },
-      });
-      await this.rtmService.login();
+      if (!this.useRtcStreamMessages) {
+        if (!channelInfo.rtmToken) {
+          throw new Error('An RTM token is required for RTM message delivery');
+        }
+
+        this.rtmService = new AgoraRTMService({
+          appId: channelInfo.appId,
+          token: channelInfo.rtmToken,
+          channel: channelInfo.channelName,
+          uid: channelInfo.uid.toString(),
+        });
+        this.rtmService.setCallbacks({
+          onMessage: message => this.callbacks.onMessage?.(message),
+          onMetric: metric => this.callbacks.onMetric?.(metric),
+          onMetricBatch: batch => this.callbacks.onMetricBatch?.(batch),
+          onEvent: eventName => this.callbacks.onEvent?.(eventName),
+          onRawMessage: message => this.callbacks.onRawRTMMessage?.(message),
+          onTokenWillExpire: async () => {
+            const response = await axios.get<AgoraRTMTokenResponse>(
+              API_CONFIG.ENDPOINTS.AGORA.RTM_TOKEN
+            );
+            if (response.data.uid !== channelInfo.uid) {
+              throw new Error('The renewed RTM token identity does not match the joined user');
+            }
+            return response.data.rtmToken;
+          },
+        });
+        await this.rtmService.login();
+      }
 
       if (this.isSIPAgent) {
         return
@@ -239,6 +262,23 @@ class AgoraRTCService {
 
     // this.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
     // await this.client.publish([this.localVideoTrack]);
+  }
+
+  private dispatchMessageResult(result: {
+    transcript?: IMessage;
+    metric?: IMetricMessage;
+    metricBatch?: ITurnMetricBatch;
+    eventName?: string;
+  }): void {
+    if (result.transcript) {
+      this.callbacks.onMessage?.(result.transcript);
+    } else if (result.metric) {
+      this.callbacks.onMetric?.(result.metric);
+    } else if (result.metricBatch) {
+      this.callbacks.onMetricBatch?.(result.metricBatch);
+    } else if (result.eventName) {
+      this.callbacks.onEvent?.(result.eventName);
+    }
   }
 
   async leaveChannel(): Promise<void> {

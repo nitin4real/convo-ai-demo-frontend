@@ -127,3 +127,21 @@ describe('MessageEngine RTM messages', () => {
         })
     })
 })
+
+describe('MessageEngine RTC stream messages', () => {
+    it('maps a direct RTC data stream transcript to the existing UI message shape', () => {
+        const engine = new MessageEngine()
+
+        const result = engine.handleStreamMessage(new TextEncoder().encode(JSON.stringify({
+            object: 'assistant.transcription',
+            text: 'Hello from RTC',
+            turn_id: 10,
+        })))
+
+        expect(result.transcript).toEqual({
+            speaker: 'assistant',
+            transcription: 'Hello from RTC',
+            turn_id: 10,
+        })
+    })
+})

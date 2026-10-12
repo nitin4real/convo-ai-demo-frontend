@@ -70,6 +70,7 @@ const SIP_Agent: React.FC = () => {
         const response = await axios.get<AgentTile>(
           API_CONFIG.ENDPOINTS.AGENT.AGENT_DETAILS.replace(':agentId', agentId)
         );
+        agoraRTCService.setUseRtcStreamMessages(response.data.useRtcStreamMessages === true);
         setAgentDetails(response.data);
         setError(null);
       } catch (err) {
@@ -85,13 +86,13 @@ const SIP_Agent: React.FC = () => {
   }, [agentId]);
 
   useEffect(() => {
-    if (channelInfo) {
+    if (channelInfo && agentDetails) {
       const joinChannelFunction = async () => {
         await joinChannel();
       };
       joinChannelFunction();
     }
-  }, [channelInfo]);
+  }, [channelInfo, agentDetails]);
 
   useEffect(() => {
     agoraRTCService.setAsSIPAgent(true);
@@ -159,7 +160,7 @@ const SIP_Agent: React.FC = () => {
   };
 
   const joinChannel = async () => {
-    if (!channelInfo) return;
+    if (!channelInfo || !agentDetails) return;
 
     try {
       await agoraRTCService.joinChannel(channelInfo);

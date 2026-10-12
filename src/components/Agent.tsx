@@ -78,6 +78,7 @@ const Agent: React.FC = () => {
         const response = await axios.get<AgentTile>(
           API_CONFIG.ENDPOINTS.AGENT.AGENT_DETAILS.replace(':agentId', agentId)
         );
+        agoraRTCService.setUseRtcStreamMessages(response.data.useRtcStreamMessages === true);
         setAgentDetails(response.data);
         setError(null);
       } catch (err) {
@@ -189,6 +190,7 @@ const Agent: React.FC = () => {
 
   useEffect(() => {
     agoraRTCService.setAsSIPAgent(false);
+    agoraRTCService.setUseRtcStreamMessages(false);
     agoraRTCService.setCallbacks({
       onUserJoined: (user) => {
         console.log('Loggin Service', 'User joined:', user);
