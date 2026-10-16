@@ -52,14 +52,20 @@ export const AgentControls = (props: IAgentControlProps) => {
         handleEndConversation,
         toggleMute,
         isMuted,
-        } = props;
+    } = props;
     const [isLoading, setIsLoading] = useState(false);
+    const validMicrophones = microphones.filter(
+        microphone => typeof microphone.deviceId === 'string' && microphone.deviceId.trim().length > 0
+    );
+    const validLanguages = (agentDetails?.languages ?? []).filter(
+        language => typeof language?.isoCode === 'string' && language.isoCode.trim().length > 0
+    );
     let enableMetric = true;
     if(agentDetails?.layout === Layout.AVATAR_LANDSCAPE_TRANSCRIPT || agentDetails?.layout === Layout.AVATAR_TRANSCRIPT) {
         enableMetric = false;
     }
 
-    const microphoneSelector = microphones.length > 0 ? (
+    const microphoneSelector = validMicrophones.length > 0 ? (
         <Select
             value={selectedMicrophoneId || ""}
             onValueChange={(value) => {
@@ -70,7 +76,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                 <SelectValue placeholder="Select Microphone" />
             </SelectTrigger>
             <SelectContent>
-                {microphones.map((microphone, index) => (
+                {validMicrophones.map((microphone, index) => (
                     <SelectItem key={microphone.deviceId} value={microphone.deviceId}>
                         {microphone.label || `Microphone ${index + 1}`}
                     </SelectItem>
@@ -84,7 +90,7 @@ export const AgentControls = (props: IAgentControlProps) => {
             <div className="flex flex-col items-center gap-4">
                 {!isJoined && !isAgentStarted && channelInfo && (
                     <>
-                        {agentDetails?.languages && (
+                        {validLanguages.length > 0 && (
                             <Select
                                 value={selectedLanguage || ""}
                                 onValueChange={(value) => setSelectedLanguage(value)}
@@ -93,7 +99,7 @@ export const AgentControls = (props: IAgentControlProps) => {
                                     <SelectValue placeholder="Select Language" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {agentDetails.languages.map((lang) => (
+                                    {validLanguages.map((lang) => (
                                         <SelectItem key={lang.isoCode} value={lang.isoCode}>
                                             {lang.name}
                                         </SelectItem>
@@ -118,7 +124,7 @@ export const AgentControls = (props: IAgentControlProps) => {
 
                             <Button
                                 onClick={async () => {
-                                    if (agentDetails?.languages && !selectedLanguage) {
+                                    if (validLanguages.length > 0 && !selectedLanguage) {
                                         toast.error('Please select a language');
                                         return;
                                     }

@@ -180,7 +180,15 @@ class AgoraRTCService {
   }
 
   async getMicrophones(skipPermissionCheck: boolean = true): Promise<MediaDeviceInfo[]> {
-    return AgoraRTC.getMicrophones(skipPermissionCheck);
+    const microphones = await AgoraRTC.getMicrophones(skipPermissionCheck);
+
+    // Browsers can expose an audio input with an empty deviceId when the
+    // permission check is skipped. Keep those entries out of the UI: Radix
+    // Select reserves the empty string for clearing the current selection and
+    // throws if it is used as a SelectItem value.
+    return microphones.filter(
+      microphone => typeof microphone.deviceId === 'string' && microphone.deviceId.trim().length > 0
+    );
   }
 
   private async createLocalAudioTrack(microphoneId?: string): Promise<IMicrophoneAudioTrack> {
